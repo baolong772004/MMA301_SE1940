@@ -1,0 +1,40 @@
+name: Release new boilerplate version
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.target_commitish }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Bump version
+        run: |
+          git config --global user.name "ReactNativeBoilerplate Bot"
+          git config --global user.email "j.dolle.bot@thecodingmachine.com"
+          npm --no-git-tag-version version ${{ github.event.release.name }}
+
+      - name: Publish to NPM
+        run: npm publish
+
+      - name: Commit and push
+        run: |
+          git add .
+          git commit -am "bump(version): tag boilerplate to version ${{ github.event.release.name }}"
+          git push
+        env:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
