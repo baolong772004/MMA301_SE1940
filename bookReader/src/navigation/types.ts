@@ -15,12 +15,6 @@ export type MainTabParamList = {
   [Paths.Write]: undefined;
 };
 
-export type RootStackParamList = {
-  [Paths.Example]: undefined;
-  [Paths.Main]: NavigatorScreenParams<MainTabParamList>;
-  [Paths.Startup]: undefined;
-};
-
 export type MainTabScreenProps<
   S extends keyof MainTabParamList = keyof MainTabParamList,
 > = CompositeScreenProps<
@@ -31,3 +25,14 @@ export type MainTabScreenProps<
 export type RootScreenProps<
   S extends keyof RootStackParamList = keyof RootStackParamList,
 > = StackScreenProps<RootStackParamList, S>;
+
+export type RootStackParamList = {
+  [Paths.Example]: undefined;
+  [Paths.Main]: NavigatorScreenParams<MainTabParamList>;
+  [Paths.Reader]: { storyId: string };
+  [Paths.Search]: undefined;
+  [Paths.Settings]: undefined;
+  [Paths.Startup]: undefined;
+  [Paths.StoryDetail]: { storyId: string };
+  [Paths.Streak]: undefined;
+};

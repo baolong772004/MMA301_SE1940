@@ -12,6 +12,12 @@ export type Chapter = {
   title: string;
 };
 
+export type ReadingProgress = {
+  chapterLabel: string;
+  progress: number; // 0..1
+  story: Story;
+};
+
 export type Story = {
   author: Author;
   coverUri: string;
@@ -22,10 +28,4 @@ export type Story = {
   status?: 'completed' | 'ongoing';
   title: string;
   views?: string;
-};
-
-export type ReadingProgress = {
-  chapterLabel: string;
-  progress: number; // 0..1
-  story: Story;
 };

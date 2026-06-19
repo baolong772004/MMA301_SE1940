@@ -1,6 +1,7 @@
+import type { Story } from '@/models';
+
 import { Pressable, View } from 'react-native';
 
-import type { Story } from '@/models';
 import { useTheme } from '@/theme';
 
 import { AppText, Cover } from '@/components/atoms';

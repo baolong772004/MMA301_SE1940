@@ -6,9 +6,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useAppFonts } from '@/hooks';
 import ApplicationNavigator from '@/navigation/Application';
-import { hydrateStorage, storage } from '@/services/storage';
 import { ThemeProvider } from '@/theme';
 import '@/translations';
+
+import { hydrateStorage, storage } from '@/services/storage';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +22,7 @@ export const queryClient = new QueryClient({
   },
 });
 
-export { storage };
+
 
 function App() {
   // Hydrate the synchronous storage cache (AsyncStorage) before mounting the
@@ -51,3 +52,5 @@ function App() {
 }
 
 export default App;
+
+export {storage} from '@/services/storage';

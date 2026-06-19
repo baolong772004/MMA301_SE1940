@@ -1,0 +1,109 @@
+{
+  "boilerplate": {
+    "common_appName": {
+      "full": "React Native Boilerplate",
+      "initials": "RNB"
+    },
+    "common_error": "Rất tiếc! Đã xảy ra lỗi.",
+    "screen_example": {
+      "hello_user": "Xin chào, tôi tên là {{name}}",
+      "title": "Chào mừng bạn đến với $t(common_appName.full)",
+      "description": "Bạn có muốn khám phá một số tính năng? Chỉ cần nhấp vào một trong ba nút ở dưới cùng của màn hình. Nút đầu tiên cho phép bạn gọi một API REST. Nút thứ hai cho phép bạn thay đổi màu chủ đề. Và nút thứ ba cho phép bạn thay đổi ngôn ngữ."
+    },
+    "error_boundary": {
+      "title": "Rất tiếc! Đã xảy ra lỗi.",
+      "description": "Chúng tôi vô cùng xin lỗi vì sự bất tiện này. Vui lòng thử lại sau.",
+      "cta": "Tải lại màn hình"
+    },
+    "alerts": {
+      "title": "Thông báo",
+      "today": "Hôm nay",
+      "earlier": "Trước đó"
+    },
+    "home": {
+      "continue_reading_title": "Tiếp Tục Đọc",
+      "recommended_title": "AI Gợi Ý Cho Bạn",
+      "search_placeholder": "Tìm kiếm truyện, tác giả...",
+      "see_all": "Xem tất cả",
+      "special_event": "Sự kiện đặc biệt"
+    },
+    "library": {
+      "title": "Thư viện",
+      "reading_tab": "Đang đọc",
+      "saved_tab": "Đã lưu",
+      "completed_tab": "Đã hoàn thành",
+      "empty_state": "Bộ sưu tập của bạn đang trống."
+    },
+    "profile": {
+      "title": "Hồ sơ",
+      "stories": "Truyện đã đăng",
+      "followers": "Người theo dõi",
+      "following": "Đang theo dõi",
+      "edit_profile": "Chỉnh sửa hồ sơ",
+      "settings": "Cài đặt",
+      "streak": "Streak đọc sách",
+      "logout": "Đăng xuất",
+      "alert_logout": "Bạn đã đăng xuất thành công.",
+      "alert_edit": "Đã nhấn chỉnh sửa hồ sơ"
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "dark_mode": "Chế độ tối",
+      "language": "Ngôn ngữ",
+      "language_toggle": "Chuyển đổi ngôn ngữ",
+      "language_current": "Tiếng Việt",
+      "about": "Giới thiệu về NovaTales"
+    },
+    "streak": {
+      "title": "Lịch sử Streak",
+      "days": "{{count}} Ngày",
+      "days_consecutive": "{{count}} Ngày Streak Liên Tiếp!",
+      "subtitle": "Hãy đọc sách mỗi ngày để giữ vững chuỗi Streak của bạn nhé!",
+      "day_1": "T2",
+      "day_2": "T3",
+      "day_3": "T4",
+      "day_4": "T5",
+      "day_5": "T6",
+      "day_6": "T7",
+      "day_7": "CN"
+    },
+    "search": {
+      "title": "Tìm kiếm",
+      "no_results": "Không tìm thấy kết quả phù hợp."
+    },
+    "story_detail": {
+      "add_to_library": "Thêm vào thư viện",
+      "chapters_tab": "Danh sách chương",
+      "no_reviews": "Chưa có đánh giá",
+      "read_now": "Đọc Ngay",
+      "reviews_tab": "Đánh giá",
+      "see_all_chapters": "Xem tất cả {{count}} chương",
+      "synopsis_title": "Tóm tắt",
+      "title": "Chi tiết truyện",
+      "rating_label": "Đánh giá",
+      "views_label": "Lượt xem",
+      "chapters_label": "Số chương",
+      "mock_description": "Hành trình phiêu lưu đầy kịch tính trong một thế giới huyền bí, nơi những bí mật cổ xưa dần được hé lộ qua những bước chân của người anh hùng..."
+    },
+    "reader": {
+      "settings_title": "Cài đặt trình đọc",
+      "font_size": "Cỡ chữ",
+      "theme": "Giao diện",
+      "theme_light": "Sáng",
+      "theme_dark": "Tối",
+      "prev_chapter": "Chương trước",
+      "next_chapter": "Chương sau",
+      "close": "Đóng",
+      "mock_chapter_text": "Trong khoảng không vô tận của vũ trụ, có một thế giới được biết đến với tên gọi NovaTales. Nơi đây từng là một vùng đất yên bình, nơi con người và các sinh vật thần thoại cùng chung sống hòa thuận dưới sự bảo hộ của Cây Sự Sống Yggdrasil. Tuy nhiên, hòa bình không kéo dài mãi mãi...\n\nMột đêm nọ, bầu trời đột ngột chuyển sang màu đỏ máu. Một tia sét khổng lồ đánh thẳng vào tâm của Yggdrasil, chẻ đôi thân cây cổ thụ ngàn năm tuổi. Từ vết nứt, một luồng hắc ám tràn ra, bao phủ khắp thế giới. Đó là sự trỗi dậy của Shadow Lord - kẻ đã bị phong ấn từ hàng vạn năm trước.\n\nNhân vật chính của chúng ta, Leo, một chàng trai trẻ từ ngôi làng nhỏ bên rìa khu rừng Silent Forest, lúc này vẫn chưa hề hay biết về định mệnh đang chờ đón mình. Cậu chỉ là một thợ săn bình thường, ngày ngày vào rừng tìm kiếm thảo dược và săn thú nhỏ để nuôi sống gia đình.\n\nCho đến khi cậu nhặt được một viên đá phát ra thứ ánh sáng lam ngọc kỳ lạ. Viên đá mang nguồn năng lượng ấm áp lạ thường, xua tan đi cái lạnh giá của đêm đông và cả sự sợ hãi trong lòng cậu. Từ giây phút ấy, cuộc đời của Leo bước sang một trang hoàn toàn mới, kéo cậu vào chuyến phiêu lưu định mệnh bảo vệ thế giới..."
+    },
+    "writer_studio": {
+      "title": "Writer Studio",
+      "reads": "Lượt đọc",
+      "followers": "Người theo dõi",
+      "earnings": "Thu nhập",
+      "my_works": "Tác phẩm của tôi",
+      "write_new": "Viết truyện mới",
+      "edit_placeholder": "Đang chỉnh sửa truyện: {{title}}"
+    }
+  }
+}

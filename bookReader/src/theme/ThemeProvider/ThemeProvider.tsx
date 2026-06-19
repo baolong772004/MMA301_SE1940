@@ -1,3 +1,4 @@
+import type { AppStorage } from '@/services/storage';
 import type { PropsWithChildren } from 'react';
 
 import { DarkTheme, DefaultTheme } from '@react-navigation/native';
@@ -27,7 +28,6 @@ import type {
   Variant,
 } from '@/theme/types/config';
 import type { ComponentTheme, Theme } from '@/theme/types/theme';
-import type { AppStorage } from '@/services/storage';
 
 type Context = {
   changeTheme: (variant: Variant) => void;
