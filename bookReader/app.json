@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "NovaTales",
+    "slug": "novatales",
+    "scheme": "novatales",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.novatales.app"
+    },
+    "android": {
+      "package": "com.novatales.app",
+      "edgeToEdgeEnabled": true
+    }
+  }
+}
