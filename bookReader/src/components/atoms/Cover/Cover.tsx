@@ -5,7 +5,7 @@ import { useTheme } from '@/theme';
 type Properties = {
   readonly radius?: number;
   readonly uri: string;
-  readonly width?: number | `${number}%`;
+  readonly width?: `${number}%` | number;
 };
 
 /** Book cover image with the standard 2:3 aspect ratio. */

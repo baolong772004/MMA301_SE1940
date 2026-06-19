@@ -1,7 +1,7 @@
+import type { AppStorage } from '@/services/storage';
+
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Button, Text, View } from 'react-native';
-
-import type { AppStorage } from '@/services/storage';
 
 import { ThemeProvider, useTheme } from '@/theme';
 

@@ -1,6 +1,7 @@
+import type { Author } from '@/models';
+
 import { View } from 'react-native';
 
-import type { Author } from '@/models';
 import { useTheme } from '@/theme';
 
 import { AppText, Avatar, Button } from '@/components/atoms';

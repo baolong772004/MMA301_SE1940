@@ -37,14 +37,12 @@ function TopAppBar({
       ]}
     >
       <View style={[{ width: 40 }]}>
-        {(showBack || onLeftPress) && (
-          <Pressable hitSlop={HIT_SLOP} onPress={onLeftPress}>
+        {(showBack || onLeftPress) ? <Pressable hitSlop={HIT_SLOP} onPress={onLeftPress}>
             <AppIcon
               color="primary"
               name={showBack ? 'arrow_back' : 'menu'}
             />
-          </Pressable>
-        )}
+          </Pressable> : null}
       </View>
 
       <AppText color="primary" variant="headlineMd">
@@ -52,11 +50,9 @@ function TopAppBar({
       </AppText>
 
       <View style={[layout.itemsEnd, { width: 40 }]}>
-        {(onRightPress || rightIcon) && (
-          <Pressable hitSlop={HIT_SLOP} onPress={onRightPress}>
+        {(onRightPress || rightIcon) ? <Pressable hitSlop={HIT_SLOP} onPress={onRightPress}>
             <AppIcon color="onSurfaceVariant" name={rightIcon} />
-          </Pressable>
-        )}
+          </Pressable> : null}
       </View>
     </View>
   );

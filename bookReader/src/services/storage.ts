@@ -34,7 +34,7 @@ export const storage: AppStorage = {
 export const hydrateStorage = async () => {
   const entries = await AsyncStorage.multiGet(PERSISTENT_KEYS);
   for (const [key, value] of entries) {
-    if (value != null) {
+    if (value != undefined) {
       cache.set(key, value);
     }
   }

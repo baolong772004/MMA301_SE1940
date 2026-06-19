@@ -3,9 +3,9 @@ import type { TextProps } from 'react-native';
 import { Text } from 'react-native';
 
 import { useTheme } from '@/theme';
+import type { Colors } from '@/theme/types/colors';
 import { typography } from '@/theme/typography';
 import type { TypographyVariant } from '@/theme/typography';
-import type { Colors } from '@/theme/types/colors';
 
 type Properties = {
   readonly color?: keyof Colors;
