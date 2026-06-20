@@ -30,16 +30,16 @@ function ChapterListItem({ chapter, onPress = undefined }: Properties) {
       <View style={[layout.row, layout.itemsCenter, gutters.gap_16, layout.flex_1]}>
         <AppText
           color="onSurfaceVariant"
-          style={{ width: 28 }}
+          style={{ width: 28, flexShrink: 0 }}
           variant="labelMd"
         >
           {String(chapter.index).padStart(2, '0')}
         </AppText>
-        <AppText color="onSurface" numberOfLines={1} variant="bodyMd">
+        <AppText color="onSurface" variant="bodyMd" style={{ flex: 1, flexWrap: 'wrap' }}>
           {chapter.title}
         </AppText>
       </View>
-      <AppText color="onSurfaceVariant" variant="labelSm">
+      <AppText color="onSurfaceVariant" style={{ flexShrink: 0 }} variant="labelSm">
         {chapter.date}
       </AppText>
     </Pressable>

@@ -21,3 +21,8 @@ package-lock.json
 node_modules
 template/js
 template/.eslintcache
+
+# Expo
+.expo/
+**/.expo/
+expo-env.d.ts

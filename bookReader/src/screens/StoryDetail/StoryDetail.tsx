@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
@@ -75,18 +75,30 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
   ];
 
   const ctaContainerStyle: any = [
-    layout.absolute,
-    layout.bottom0,
-    layout.left0,
-    layout.right0,
     layout.row,
     layout.itemsCenter,
-    layout.justifyBetween,
     backgrounds.surface,
     borders.wTop_1,
     borders.surfaceVariant,
     gutters.paddingHorizontal_24,
     gutters.paddingVertical_16,
+    gutters.gap_12,
+  ];
+
+  const footerContainerStyle: any = [
+    layout.col,
+    layout.itemsCenter,
+    gutters.gap_16,
+    gutters.paddingHorizontal_24,
+    gutters.paddingVertical_24,
+    borders.wTop_1,
+    { borderColor: colors.outlineVariant },
+  ];
+
+  const footerLinksStyle: any = [
+    layout.row,
+    layout.itemsCenter,
+    layout.justifyCenter,
     gutters.gap_16,
   ];
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -101,9 +113,12 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
       showBack
       title={t('story_detail.title')}
     >
-      <View style={[layout.flex_1, layout.relative]}>
+      <View style={[layout.flex_1, layout.col]}>
         <ScrollView
-          contentContainerStyle={[gutters.gap_24, { paddingBottom: 100 }]}
+          contentContainerStyle={[
+            gutters.gap_24,
+            { paddingBottom: 24, flexGrow: 1 },
+          ]}
           showsVerticalScrollIndicator={false}
           style={layout.flex_1}
         >
@@ -199,6 +214,59 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
               </AppText>
             </View>
           )}
+
+          <View style={footerContainerStyle}>
+            <AppText color="onSurfaceVariant" variant="labelSm">
+              © 2024 NovaTales. Premium Literary Sanctuary.
+            </AppText>
+            <View style={footerLinksStyle}>
+              <Pressable onPress={() => {}}>
+                <AppText
+                  color="primary"
+                  style={{ textDecorationLine: 'underline' }}
+                  variant="labelSm"
+                >
+                  Terms
+                </AppText>
+              </Pressable>
+              <AppText color="onSurfaceVariant" variant="labelSm">
+                |
+              </AppText>
+              <Pressable onPress={() => {}}>
+                <AppText
+                  color="primary"
+                  style={{ textDecorationLine: 'underline' }}
+                  variant="labelSm"
+                >
+                  Privacy
+                </AppText>
+              </Pressable>
+              <AppText color="onSurfaceVariant" variant="labelSm">
+                |
+              </AppText>
+              <Pressable onPress={() => {}}>
+                <AppText
+                  color="primary"
+                  style={{ textDecorationLine: 'underline' }}
+                  variant="labelSm"
+                >
+                  Support
+                </AppText>
+              </Pressable>
+              <AppText color="onSurfaceVariant" variant="labelSm">
+                |
+              </AppText>
+              <Pressable onPress={() => {}}>
+                <AppText
+                  color="primary"
+                  style={{ textDecorationLine: 'underline' }}
+                  variant="labelSm"
+                >
+                  Vietnam Office
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
         </ScrollView>
 
         <View style={ctaContainerStyle}>
