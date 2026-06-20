@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
- 
+
 import { useTranslation } from 'react-i18next';
 import { Alert, View } from 'react-native';
 

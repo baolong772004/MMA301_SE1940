@@ -10,6 +10,7 @@ type Properties = {
   readonly label: string;
   readonly onPress?: () => void;
   readonly rightElement?: React.ReactNode;
+  readonly noBorder?: boolean;
 };
 
 function SettingRow({
@@ -17,6 +18,7 @@ function SettingRow({
   label,
   onPress = undefined,
   rightElement = undefined,
+  noBorder = false,
 }: Properties) {
   const { colors, gutters, layout } = useTheme();
 
@@ -31,7 +33,7 @@ function SettingRow({
         gutters.paddingVertical_16,
         {
           borderBottomColor: colors.outlineVariant,
-          borderBottomWidth: 1,
+          borderBottomWidth: noBorder ? 0 : 1,
           opacity: pressed ? 0.7 : 1,
         },
       ]}
