@@ -1,9 +1,9 @@
+import type { AppStorage } from '@/services/storage';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-import type { AppStorage } from '@/services/storage';
 
 import { SupportedLanguages } from '@/hooks/language/schema';
 import { ThemeProvider } from '@/theme';

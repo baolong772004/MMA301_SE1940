@@ -1,6 +1,7 @@
+import type { ReadingProgress } from '@/models';
+
 import { Pressable, View } from 'react-native';
 
-import type { ReadingProgress } from '@/models';
 import { useTheme } from '@/theme';
 
 import { AppText, Cover, ProgressBar } from '@/components/atoms';

@@ -2,7 +2,6 @@ module.exports = function (api) {
   api.cache(true);
 
   return {
-    presets: ['babel-preset-expo'],
     plugins: [
       [
         'module-resolver',
@@ -18,5 +17,6 @@ module.exports = function (api) {
       '@babel/plugin-transform-export-namespace-from',
       'react-native-worklets/plugin', // reanimated 4 — must stay last
     ],
+    presets: ['babel-preset-expo'],
   };
 };

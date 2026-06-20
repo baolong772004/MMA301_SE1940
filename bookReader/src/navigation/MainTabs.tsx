@@ -4,9 +4,8 @@ import { Paths } from '@/navigation/paths';
 import type { MainTabParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 
-import { Alerts, Home, Library, Profile, Write } from '@/screens';
-
 import { AppIcon } from '@/components/atoms';
+import { Alerts, Home, Library, Profile, Write } from '@/screens';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 

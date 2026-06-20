@@ -14,6 +14,96 @@
       "title": "Oups ! Quelque chose s'est mal passé.",
       "description": "Nous sommes désolés pour le désagrément. Veuillez réessayer plus tard.",
       "cta": "Recharger l'écran"
+    },
+    "alerts": {
+      "title": "Notifications",
+      "today": "Aujourd'hui",
+      "earlier": "Plus tôt"
+    },
+    "home": {
+      "continue_reading_title": "Continuer la lecture",
+      "recommended_title": "Recommandé par l'IA",
+      "search_placeholder": "Rechercher des histoires, auteurs...",
+      "see_all": "Voir tout",
+      "special_event": "Événement spécial"
+    },
+    "library": {
+      "title": "Bibliothèque",
+      "reading_tab": "Lecture",
+      "saved_tab": "Enregistré",
+      "completed_tab": "Terminé",
+      "empty_state": "Votre collection est vide."
+    },
+    "profile": {
+      "title": "Profil",
+      "stories": "Histoires",
+      "followers": "Abonnés",
+      "following": "Abonnements",
+      "edit_profile": "Modifier le Profil",
+      "settings": "Paramètres",
+      "streak": "Série",
+      "logout": "Déconnexion",
+      "alert_logout": "Vous vous êtes déconnecté.",
+      "alert_edit": "Modifier le profil cliqué"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "dark_mode": "Mode Sombre",
+      "language": "Langue",
+      "language_toggle": "Changer la langue",
+      "language_current": "Français",
+      "about": "À propos de NovaTales"
+    },
+    "streak": {
+      "title": "Série de Lecture",
+      "days": "{{count}} Jours",
+      "days_consecutive": "{{count}} Jours de Lecture !",
+      "subtitle": "Lisez tous les jours pour garder votre série !",
+      "day_1": "L",
+      "day_2": "M",
+      "day_3": "M",
+      "day_4": "J",
+      "day_5": "V",
+      "day_6": "S",
+      "day_7": "D"
+    },
+    "search": {
+      "title": "Rechercher",
+      "no_results": "Aucun résultat trouvé."
+    },
+    "story_detail": {
+      "add_to_library": "Ajouter à la bibliothèque",
+      "chapters_label": "Chapitres",
+      "chapters_tab": "Chapitres",
+      "mock_description": "Une aventure palpitante dans un monde mystique où les secrets anciens se dévoilent...",
+      "no_reviews": "Pas encore d'évaluation",
+      "rating_label": "Évaluation",
+      "read_now": "Lire maintenant",
+      "reviews_tab": "Évaluations",
+      "see_all_chapters": "Voir les {{count}} chapitres",
+      "synopsis_title": "Synopsis",
+      "title": "Détails de l'histoire",
+      "views_label": "Vues"
+    },
+    "reader": {
+      "close": "Fermer",
+      "font_size": "Taille du texte",
+      "mock_chapter_text": "Dans le vide infini de l'univers, il y avait un monde connu sous le nom de NovaTales. C'était autrefois une terre paisible, où humains et créatures mythiques vivaient en harmonie sous la protection de l'Arbre de Vie, Yggdrasil. Cependant, la paix ne dura pas éternellement...",
+      "next_chapter": "Chapitre suivant",
+      "prev_chapter": "Chapitre précédent",
+      "settings_title": "Paramètres",
+      "theme": "Thème",
+      "theme_dark": "Sombre",
+      "theme_light": "Clair"
+    },
+    "writer_studio": {
+      "title": "Studio d'Écriture",
+      "reads": "Lectures",
+      "followers": "Abonnés",
+      "earnings": "Gains",
+      "my_works": "Mes Œuvres",
+      "write_new": "Écrire une nouvelle histoire",
+      "edit_placeholder": "Modifier l'histoire : {{title}}"
     }
   }
 }

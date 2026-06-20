@@ -5,8 +5,6 @@ import type { Colors } from '@/theme/types/colors';
 
 import { AppIcon, AppText } from '@/components/atoms';
 
-type Variant = 'filled' | 'outlined' | 'tonal';
-
 type Properties = {
   readonly disabled?: boolean;
   readonly fullWidth?: boolean;
@@ -16,9 +14,11 @@ type Properties = {
   readonly variant?: Variant;
 };
 
+type Variant = 'filled' | 'outlined' | 'tonal';
+
 const STYLE_BY_VARIANT: Record<
   Variant,
-  { bg: keyof Colors | 'transparent'; border?: keyof Colors; fg: keyof Colors }
+  { bg: 'transparent' | keyof Colors; border?: keyof Colors; fg: keyof Colors }
 > = {
   filled: { bg: 'primary', fg: 'onPrimary' },
   outlined: { bg: 'transparent', border: 'primary', fg: 'primary' },

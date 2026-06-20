@@ -1,6 +1,7 @@
+import type { Chapter } from '@/models';
+
 import { Pressable, View } from 'react-native';
 
-import type { Chapter } from '@/models';
 import { useTheme } from '@/theme';
 
 import { AppText } from '@/components/atoms';

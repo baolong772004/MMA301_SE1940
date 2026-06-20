@@ -14,6 +14,96 @@
       "title": "Oops! Something went wrong.",
       "description": "We are sorry for the inconvenience. Please try again later.",
       "cta": "Reload the screen"
+    },
+    "alerts": {
+      "title": "Notifications",
+      "today": "Today",
+      "earlier": "Earlier"
+    },
+    "home": {
+      "continue_reading_title": "Continue Reading",
+      "recommended_title": "AI Recommended",
+      "search_placeholder": "Search stories, authors...",
+      "see_all": "See All",
+      "special_event": "Special Event"
+    },
+    "library": {
+      "title": "Library",
+      "reading_tab": "Reading",
+      "saved_tab": "Saved",
+      "completed_tab": "Completed",
+      "empty_state": "Your collection is empty."
+    },
+    "profile": {
+      "title": "Profile",
+      "stories": "Stories",
+      "followers": "Followers",
+      "following": "Following",
+      "edit_profile": "Edit Profile",
+      "settings": "Settings",
+      "streak": "Streak",
+      "logout": "Logout",
+      "alert_logout": "You have logged out.",
+      "alert_edit": "Edit Profile clicked"
+    },
+    "settings": {
+      "title": "Settings",
+      "dark_mode": "Dark Mode",
+      "language": "Language",
+      "language_toggle": "Toggle Language",
+      "language_current": "English",
+      "about": "About NovaTales"
+    },
+    "streak": {
+      "title": "Reading Streak",
+      "days": "{{count}} Days",
+      "days_consecutive": "{{count}} Days Reading Streak!",
+      "subtitle": "Read every day to keep your streak alive!",
+      "day_1": "M",
+      "day_2": "T",
+      "day_3": "W",
+      "day_4": "T",
+      "day_5": "F",
+      "day_6": "S",
+      "day_7": "S"
+    },
+    "search": {
+      "title": "Search",
+      "no_results": "No results found."
+    },
+    "story_detail": {
+      "add_to_library": "Add to Library",
+      "chapters_label": "Chapters",
+      "chapters_tab": "Chapters",
+      "mock_description": "A thrilling adventure in a mystical world where ancient secrets unfold through the hero's steps...",
+      "no_reviews": "No reviews yet",
+      "rating_label": "Rating",
+      "read_now": "Read Now",
+      "reviews_tab": "Reviews",
+      "see_all_chapters": "See all {{count}} chapters",
+      "synopsis_title": "Synopsis",
+      "title": "Story Detail",
+      "views_label": "Views"
+    },
+    "reader": {
+      "close": "Close",
+      "font_size": "Font Size",
+      "mock_chapter_text": "In the infinite void of the universe, there was a world known as NovaTales. It was once a peaceful land, where humans and mythical creatures lived together in harmony under the protection of the Tree of Life, Yggdrasil. However, peace did not last forever...\n\nOne night, the sky suddenly turned blood red. A massive lightning bolt struck the heart of Yggdrasil, splitting the thousand-year-old tree in half. From the crack, a dark shadow burst out and covered the world. It was the rise of the Shadow Lord - who had been sealed for tens of thousands of years.\n\nOur protagonist, Leo, a young man from a small village on the edge of the Silent Forest, was still unaware of the destiny that awaited him. He was just an ordinary hunter, entering the forest every day to search for herbs and hunt small game to feed his family.\n\nUntil he picked up a stone emitting a strange turquoise light. The stone carried an unusually warm energy, dispelling the freezing cold of winter and the fear in his heart. From that moment, Leo's life turned to a completely new chapter, pulling him into a fateful adventure to protect the world...",
+      "next_chapter": "Next Chapter",
+      "prev_chapter": "Prev Chapter",
+      "settings_title": "Reader Settings",
+      "theme": "Theme",
+      "theme_dark": "Dark",
+      "theme_light": "Light"
+    },
+    "writer_studio": {
+      "title": "Writer Studio",
+      "reads": "Reads",
+      "followers": "Followers",
+      "earnings": "Earnings",
+      "my_works": "My Works",
+      "write_new": "Write New Story",
+      "edit_placeholder": "Editing story: {{title}}"
     }
   }
 }

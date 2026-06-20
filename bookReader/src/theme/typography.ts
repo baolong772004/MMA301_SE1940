@@ -7,12 +7,12 @@ import type { TextStyle } from 'react-native';
  * system font (App.tsx gates render on load, so this is only a safety net).
  */
 export const FontFamily = {
-  merriweather: 'Merriweather_400Regular',
-  merriweatherBold: 'Merriweather_700Bold',
   jakarta: 'PlusJakartaSans_400Regular',
+  jakartaBold: 'PlusJakartaSans_700Bold',
   jakartaMedium: 'PlusJakartaSans_500Medium',
   jakartaSemiBold: 'PlusJakartaSans_600SemiBold',
-  jakartaBold: 'PlusJakartaSans_700Bold',
+  merriweather: 'Merriweather_400Regular',
+  merriweatherBold: 'Merriweather_700Bold',
 } as const;
 
 /**
@@ -20,11 +20,21 @@ export const FontFamily = {
  * letterSpacing is absolute (em * fontSize) since RN has no em unit.
  */
 export const typography = {
+  bodyLg: {
+    fontFamily: FontFamily.jakarta,
+    fontSize: 18,
+    lineHeight: 30,
+  },
+  bodyMd: {
+    fontFamily: FontFamily.jakarta,
+    fontSize: 16,
+    lineHeight: 26,
+  },
   display: {
     fontFamily: FontFamily.merriweatherBold,
     fontSize: 48,
-    lineHeight: 60,
     letterSpacing: -0.96,
+    lineHeight: 60,
   },
   headlineLg: {
     fontFamily: FontFamily.merriweatherBold,
@@ -41,21 +51,11 @@ export const typography = {
     fontSize: 24,
     lineHeight: 32,
   },
-  bodyLg: {
-    fontFamily: FontFamily.jakarta,
-    fontSize: 18,
-    lineHeight: 30,
-  },
-  bodyMd: {
-    fontFamily: FontFamily.jakarta,
-    fontSize: 16,
-    lineHeight: 26,
-  },
   labelMd: {
     fontFamily: FontFamily.jakartaSemiBold,
     fontSize: 14,
-    lineHeight: 20,
     letterSpacing: 0.7,
+    lineHeight: 20,
   },
   labelSm: {
     fontFamily: FontFamily.jakartaMedium,
@@ -65,8 +65,8 @@ export const typography = {
   readingText: {
     fontFamily: FontFamily.merriweather,
     fontSize: 20,
-    lineHeight: 36,
     letterSpacing: 0.2,
+    lineHeight: 36,
   },
 } as const satisfies Record<string, TextStyle>;
 

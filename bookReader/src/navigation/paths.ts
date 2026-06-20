@@ -5,6 +5,11 @@ export const enum Paths {
   Library = 'library',
   Main = 'main',
   Profile = 'profile',
+  Reader = 'reader',
+  Search = 'search',
+  Settings = 'settings',
   Startup = 'startup',
+  StoryDetail = 'story-detail',
+  Streak = 'streak',
   Write = 'write',
 }
