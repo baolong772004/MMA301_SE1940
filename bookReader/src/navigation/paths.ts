@@ -9,6 +9,8 @@ export const enum Paths {
   Search = 'search',
   Settings = 'settings',
   Startup = 'startup',
+  Login = 'login',
+  Admin = 'admin',
   StoryDetail = 'story-detail',
   Streak = 'streak',
   Write = 'write',

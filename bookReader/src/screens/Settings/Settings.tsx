@@ -190,7 +190,7 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
         {/* Logout Button */}
         <Pressable 
           onPress={() => {
-            Alert.alert(t('settings.title'), t('profile.alert_logout', 'Đăng xuất thành công'));
+            navigation.reset({ index: 0, routes: [{ name: Paths.Login }] });
           }}
           style={({ pressed }) => [
             logoutButtonStyle,

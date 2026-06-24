@@ -97,7 +97,8 @@ function Profile({ navigation }: MainTabScreenProps<Paths.Profile>) {
           iconName="person"
           label={t('profile.logout')}
           onPress={() => {
-            Alert.alert(t('profile.title'), t('profile.alert_logout'));
+            // perform logout by resetting to Login screen
+            navigation.reset({ index: 0, routes: [{ name: Paths.Login }] });
           }}
         />
       </View>

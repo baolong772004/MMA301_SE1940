@@ -7,7 +7,7 @@ import { Paths } from '@/navigation/paths';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 
-import { Example, Reader, Search, Settings, Startup, StoryDetail, Streak } from '@/screens';
+import { Example, Reader, Search, Settings, Startup, StoryDetail, Streak, Login, Admin } from '@/screens';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -18,7 +18,9 @@ function ApplicationNavigator() {
     <SafeAreaProvider>
       <NavigationContainer theme={navigationTheme}>
         <Stack.Navigator key={variant} screenOptions={{ headerShown: false }}>
+          <Stack.Screen component={Login} name={Paths.Login} />
           <Stack.Screen component={Startup} name={Paths.Startup} />
+          <Stack.Screen component={Admin} name={Paths.Admin} />
           <Stack.Screen component={MainTabs} name={Paths.Main} />
           <Stack.Screen component={Example} name={Paths.Example} />
           <Stack.Screen component={StoryDetail} name={Paths.StoryDetail} />

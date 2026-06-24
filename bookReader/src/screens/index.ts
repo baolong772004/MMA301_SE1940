@@ -7,6 +7,8 @@ export { default as Reader } from './Reader/Reader';
 export { default as Search } from './Search/Search';
 export { default as Settings } from './Settings/Settings';
 export { default as Startup } from './Startup/Startup';
+export { default as Login } from './Login/Login';
+export { default as Admin } from './Admin/AdminHome';
 export { default as StoryDetail } from './StoryDetail/StoryDetail';
 export { default as Streak } from './Streak/Streak';
 export { default as Write } from './Write/Write';
