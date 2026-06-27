@@ -14,7 +14,15 @@ import { ScreenContainer } from '@/components/templates';
 import { chapters } from '@/mocks/stories';
 
 function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
-  const { backgrounds, borders, changeTheme, colors, gutters, layout, variant } = useTheme();
+  const {
+    backgrounds,
+    borders,
+    changeTheme,
+    colors,
+    gutters,
+    layout,
+    variant,
+  } = useTheme();
   const { t } = useTranslation();
 
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -22,7 +30,8 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
   const [fontSize, setFontSize] = useState(20);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(1);
 
-  const currentChapter = chapters.find((c) => c.index === currentChapterIndex) ?? chapters[0];
+  const currentChapter =
+    chapters.find((c) => c.index === currentChapterIndex) ?? chapters[0];
   const maxChapters = chapters.length;
   const progress = currentChapterIndex / maxChapters;
 
@@ -84,11 +93,7 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
     gutters.gap_24,
   ];
 
-  const rowStyle: any = [
-    layout.row,
-    layout.itemsCenter,
-    layout.justifyBetween,
-  ];
+  const rowStyle: any = [layout.row, layout.itemsCenter, layout.justifyBetween];
 
   const buttonAdjustStyle: any = [
     layout.justifyCenter,
@@ -113,11 +118,7 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   return (
-    <ScreenContainer
-      padded={false}
-      scroll={false}
-      showHeader={false}
-    >
+    <ScreenContainer padded={false} scroll={true} showHeader={false}>
       <View style={[layout.flex_1, { backgroundColor: colors.surface }]}>
         <Pressable onPress={toggleControls} style={layout.flex_1}>
           <ScrollView
@@ -257,7 +258,10 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
                     onPress={() => {
                       setFontSize(Math.max(14, fontSize - 2));
                     }}
-                    style={[buttonAdjustStyle, fontSize <= 14 && { opacity: 0.5 }]}
+                    style={[
+                      buttonAdjustStyle,
+                      fontSize <= 14 && { opacity: 0.5 },
+                    ]}
                   >
                     <AppText color="onSurface" variant="headlineMd">
                       -
@@ -268,7 +272,10 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
                     onPress={() => {
                       setFontSize(Math.min(32, fontSize + 2));
                     }}
-                    style={[buttonAdjustStyle, fontSize >= 32 && { opacity: 0.5 }]}
+                    style={[
+                      buttonAdjustStyle,
+                      fontSize >= 32 && { opacity: 0.5 },
+                    ]}
                   >
                     <AppText color="onSurface" variant="headlineMd">
                       +
@@ -282,7 +289,14 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
                 <AppText color="onSurface" variant="labelMd">
                   {t('reader.theme')}
                 </AppText>
-                <View style={[layout.row, layout.flex_1, gutters.gap_12, { marginLeft: 24 }]}>
+                <View
+                  style={[
+                    layout.row,
+                    layout.flex_1,
+                    gutters.gap_12,
+                    { marginLeft: 24 },
+                  ]}
+                >
                   <Pressable
                     onPress={() => {
                       changeTheme('default');
