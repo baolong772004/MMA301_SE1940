@@ -51,11 +51,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "269862289151-oo4uck7ieo14g6u251i3icmnkdd12s5l.apps.googleusercontent.com",
+          "client_id": "269862289151-uoqo3d35saous2pqvo5ijpqnh088oiet.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.novatales.app",
-            "certificate_hash": "a4c0895c384f95a5f17b6012895281398c32c3ee"
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {

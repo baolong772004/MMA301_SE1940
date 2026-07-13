@@ -15,7 +15,7 @@ export type AppStorage = {
 const cache = new Map<string, string>();
 
 // Keys that need to be available synchronously at startup.
-const PERSISTENT_KEYS = ['theme'];
+const PERSISTENT_KEYS = ['theme', 'user_profile', 'user_id'];
 
 export const storage: AppStorage = {
   delete(key) {

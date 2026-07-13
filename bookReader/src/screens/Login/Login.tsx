@@ -19,12 +19,16 @@ import {
 
 import {
   GoogleOneTapSignIn,
+  isCancelledResponse,
+  isErrorWithCode,
   isNoSavedCredentialFoundResponse,
   isSuccessResponse,
+  statusCodes,
 } from 'react-native-nitro-google-signin';
 
 import { Paths } from '@/navigation/paths';
 import { useTheme } from '@/theme';
+import { useUser } from '@/hooks';
 
 import { Button } from '@/components/atoms';
 import { SafeScreen } from '@/components/templates';
@@ -35,12 +39,17 @@ import { SafeScreen } from '@/components/templates';
  * autoDetect sẽ tự lấy Web Client ID trong file
  * google-services.json của Firebase.
  */
+const GOOGLE_WEB_CLIENT_ID =
+  '269862289151-42quud3bfbjie66l5puikfhguevpfu71.apps.googleusercontent.com';
+
 GoogleOneTapSignIn.configure({
-  webClientId: 'autoDetect',
+  webClientId: GOOGLE_WEB_CLIENT_ID,
+  autoSelectOnSignIn: false,
 });
 
 function Login({ navigation }: RootScreenProps<Paths.Login>) {
   const { layout } = useTheme();
+  const { saveUser } = useUser();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -91,85 +100,106 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
     setGoogleLoading(true);
 
     try {
-      /*
-       * Kiểm tra máy Android có Google Play Services không.
-       */
+      console.log('[Google Login] Starting Google Sign-In process...');
+
       await GoogleOneTapSignIn.checkPlayServices();
+      console.log('[Google Login] Google Play Services check passed');
 
-      /*
-       * Thử đăng nhập với tài khoản đã từng được sử dụng.
-       */
       let googleResponse = await GoogleOneTapSignIn.signIn();
+      console.log('[Google Login] signIn response:', googleResponse.type);
 
-      /*
-       * Nếu chưa có tài khoản Google nào từng đăng nhập app,
-       * mở màn hình để người dùng chọn tài khoản.
-       */
       if (isNoSavedCredentialFoundResponse(googleResponse)) {
         googleResponse = await GoogleOneTapSignIn.createAccount();
-      }
-
-      /*
-       * Trường hợp thiết bị vẫn chưa tìm được tài khoản,
-       * mở màn hình đăng nhập Google đầy đủ.
-       */
-      if (isNoSavedCredentialFoundResponse(googleResponse)) {
-        googleResponse = await GoogleOneTapSignIn.presentExplicitSignIn();
-      }
-
-      /*
-       * Người dùng bấm hủy hoặc đăng nhập không thành công.
-       */
-      if (!isSuccessResponse(googleResponse)) {
-        return;
-      }
-
-      const idToken = googleResponse.data?.idToken;
-
-      if (!idToken) {
-        throw new Error(
-          'Google không trả về ID Token. Hãy kiểm tra lại cấu hình Firebase.',
+        console.log(
+          '[Google Login] createAccount response:',
+          googleResponse.type,
         );
       }
 
-      /*
-       * Tạo Firebase credential từ Google ID Token.
-       */
+      if (isNoSavedCredentialFoundResponse(googleResponse)) {
+        googleResponse = await GoogleOneTapSignIn.presentExplicitSignIn();
+        console.log(
+          '[Google Login] presentExplicitSignIn response:',
+          googleResponse.type,
+        );
+      }
+
+      if (isCancelledResponse(googleResponse)) {
+        setError(
+          'Bạn đã đóng cửa sổ Google hoặc chưa chọn tài khoản. Vui lòng thử lại.',
+        );
+        return;
+      }
+
+      if (!isSuccessResponse(googleResponse)) {
+        throw new Error(
+          `Google Sign-In không thành công: ${googleResponse.type}`,
+        );
+      }
+
+      const idToken = googleResponse.data.idToken;
+
+      if (!idToken) {
+        throw new Error(
+          'Không nhận được Google ID Token. Hãy kiểm tra Web Client ID, package name và SHA-1.',
+        );
+      }
+
+      console.log('[Google Login] ID Token received');
+
       const googleCredential = GoogleAuthProvider.credential(idToken);
 
-      /*
-       * Đăng nhập vào Firebase Authentication.
-       */
       const firebaseResult = await signInWithCredential(
         getAuth(),
         googleCredential,
       );
 
-      console.log('Firebase UID:', firebaseResult.user.uid);
-      console.log('Google email:', firebaseResult.user.email);
-      console.log('Google name:', firebaseResult.user.displayName);
-      console.log('Google photo:', firebaseResult.user.photoURL);
+      const googleUserInfo = {
+        id: firebaseResult.user.uid,
+        email: firebaseResult.user.email ?? '',
+        name: firebaseResult.user.displayName ?? 'User',
+        photoURL: firebaseResult.user.photoURL ?? undefined,
+      };
 
-      /*
-       * Hiện tại tất cả tài khoản Google đều là User.
-       *
-       * Sau này có thể kiểm tra role trong Firestore
-       * để chuyển Admin hoặc User.
-       */
+      await saveUser(googleUserInfo);
+
+      console.log(
+        '[Google Login] Firebase sign-in successful:',
+        googleUserInfo.email,
+      );
+
+      // Mọi tài khoản Google đều đi vào luồng User.
       navigation.reset({
         index: 0,
         routes: [{ name: Paths.Startup }],
       });
     } catch (loginError: unknown) {
-      console.error('Google Firebase login error:', loginError);
+      console.error('[Google Login] Error:', loginError);
 
-      if (loginError instanceof Error) {
-        setError(`Đăng nhập Google thất bại: ${loginError.message}`);
-      } else {
-        setError(
-          'Đăng nhập Google thất bại. Vui lòng kiểm tra Firebase và thử lại.',
-        );
+      let message = 'Đăng nhập Google thất bại. Vui lòng thử lại.';
+
+      if (isErrorWithCode(loginError)) {
+        switch (loginError.code) {
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            message = 'Google Play Services chưa có hoặc cần cập nhật.';
+            break;
+          case statusCodes.IN_PROGRESS:
+            message = 'Một lần đăng nhập Google khác đang được xử lý.';
+            break;
+          case statusCodes.SIGN_IN_CANCELLED:
+            message = 'Bạn đã hủy đăng nhập Google.';
+            break;
+          case statusCodes.SIGN_IN_REQUIRED:
+            message = 'Google yêu cầu bạn chọn và đăng nhập lại tài khoản.';
+            break;
+          default:
+            message = `Google Sign-In lỗi: ${loginError.code}`;
+        }
+      } else if (loginError instanceof Error) {
+        message = loginError.message;
       }
+
+      setError(message);
     } finally {
       setGoogleLoading(false);
     }

@@ -7,6 +7,7 @@ import { Paths } from '@/navigation/paths';
 import type { MainTabScreenProps, RootStackParamList } from '@/navigation/types';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '@/theme';
+import { useUser } from '@/hooks';
 
 import { AppText, Avatar, Button } from '@/components/atoms';
 import { SettingRow, StatItem } from '@/components/molecules';
@@ -20,6 +21,18 @@ function Profile({ navigation }: MainTabScreenProps<Paths.Profile>) {
   const parentNavigation = navigation.getParent<ProfileNavigationProp>();
   const { colors, gutters, layout } = useTheme();
   const { t } = useTranslation();
+  const { user, clearUser } = useUser();
+
+  // Use user data from Google login if available, otherwise use mock data
+  const profileInfo = user ? {
+    name: user.name,
+    avatarUri: user.photoURL,
+    email: user.email,
+  } : {
+    name: profileData.name,
+    avatarUri: profileData.avatarUri,
+    email: profileData.handle,
+  };
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const headerStyle: any = [
@@ -47,12 +60,12 @@ function Profile({ navigation }: MainTabScreenProps<Paths.Profile>) {
     <ScreenContainer padded title={t('profile.title')}>
       {/* Avatar & User Details */}
       <View style={headerStyle}>
-        <Avatar size={96} uri={profileData.avatarUri} />
+        <Avatar size={96} uri={profileInfo.avatarUri} />
         <AppText color="onSurface" variant="headlineLg">
-          {profileData.name}
+          {profileInfo.name}
         </AppText>
         <AppText color="onSurfaceVariant" variant="bodyMd">
-          {profileData.handle}
+          {profileInfo.email}
         </AppText>
         <View style={gutters.marginTop_8}>
           <Button
@@ -101,7 +114,8 @@ function Profile({ navigation }: MainTabScreenProps<Paths.Profile>) {
           iconName="person"
           label={t('profile.logout')}
           onPress={() => {
-            // perform logout by resetting to Login screen on the root stack
+            // Clear user data and reset to Login screen
+            clearUser();
             parentNavigation?.reset({ index: 0, routes: [{ name: Paths.Login }] });
           }}
         />
