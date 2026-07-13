@@ -15,7 +15,13 @@
     },
     "android": {
       "package": "com.novatales.app",
-      "edgeToEdgeEnabled": true
-    }
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "react-native-nitro-google-signin"
+    ]
   }
 }

@@ -2,44 +2,177 @@ import type { RootScreenProps } from '@/navigation/types';
 
 import { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
   TextInput,
   TouchableOpacity,
-  Text,
-  Platform,
-  KeyboardAvoidingView,
+  View,
 } from 'react-native';
+
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithCredential,
+} from '@react-native-firebase/auth';
+
+import {
+  GoogleOneTapSignIn,
+  isNoSavedCredentialFoundResponse,
+  isSuccessResponse,
+} from 'react-native-nitro-google-signin';
 
 import { Paths } from '@/navigation/paths';
 import { useTheme } from '@/theme';
 
-import { Button, AppText } from '@/components/atoms';
+import { Button } from '@/components/atoms';
 import { SafeScreen } from '@/components/templates';
 
+/*
+ * Cấu hình Google Sign-In.
+ *
+ * autoDetect sẽ tự lấy Web Client ID trong file
+ * google-services.json của Firebase.
+ */
+GoogleOneTapSignIn.configure({
+  webClientId: 'autoDetect',
+});
+
 function Login({ navigation }: RootScreenProps<Paths.Login>) {
-  const { layout, gutters, fonts, backgrounds, borders } = useTheme();
+  const { layout } = useTheme();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [error, setError] = useState<string | undefined>(undefined);
 
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  /**
+   * Đăng nhập demo bằng username/password.
+   */
   function handleLogin() {
     setError(undefined);
-    const e = email.trim().toLowerCase();
-    const p = password;
 
-    // simple demo credentials and routing
-    if (e.includes('admin') && p === 'admin') {
-      navigation.reset({ index: 0, routes: [{ name: Paths.Admin }] });
+    const normalizedEmail = email.trim().toLowerCase();
+    const enteredPassword = password;
+
+    if (normalizedEmail.includes('admin') && enteredPassword === 'admin') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: Paths.Admin }],
+      });
+
       return;
     }
 
-    if (e.includes('user') && p === 'user') {
-      navigation.reset({ index: 0, routes: [{ name: Paths.Startup }] });
+    if (normalizedEmail.includes('user') && enteredPassword === 'user') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: Paths.Startup }],
+      });
+
       return;
     }
 
     setError('Sai username hoặc password. Vui lòng thử lại.');
+  }
+
+  /**
+   * Đăng nhập Google và xác thực với Firebase.
+   */
+  async function handleGoogleLogin() {
+    if (googleLoading) {
+      return;
+    }
+
+    setError(undefined);
+    setGoogleLoading(true);
+
+    try {
+      /*
+       * Kiểm tra máy Android có Google Play Services không.
+       */
+      await GoogleOneTapSignIn.checkPlayServices();
+
+      /*
+       * Thử đăng nhập với tài khoản đã từng được sử dụng.
+       */
+      let googleResponse = await GoogleOneTapSignIn.signIn();
+
+      /*
+       * Nếu chưa có tài khoản Google nào từng đăng nhập app,
+       * mở màn hình để người dùng chọn tài khoản.
+       */
+      if (isNoSavedCredentialFoundResponse(googleResponse)) {
+        googleResponse = await GoogleOneTapSignIn.createAccount();
+      }
+
+      /*
+       * Trường hợp thiết bị vẫn chưa tìm được tài khoản,
+       * mở màn hình đăng nhập Google đầy đủ.
+       */
+      if (isNoSavedCredentialFoundResponse(googleResponse)) {
+        googleResponse = await GoogleOneTapSignIn.presentExplicitSignIn();
+      }
+
+      /*
+       * Người dùng bấm hủy hoặc đăng nhập không thành công.
+       */
+      if (!isSuccessResponse(googleResponse)) {
+        return;
+      }
+
+      const idToken = googleResponse.data?.idToken;
+
+      if (!idToken) {
+        throw new Error(
+          'Google không trả về ID Token. Hãy kiểm tra lại cấu hình Firebase.',
+        );
+      }
+
+      /*
+       * Tạo Firebase credential từ Google ID Token.
+       */
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+
+      /*
+       * Đăng nhập vào Firebase Authentication.
+       */
+      const firebaseResult = await signInWithCredential(
+        getAuth(),
+        googleCredential,
+      );
+
+      console.log('Firebase UID:', firebaseResult.user.uid);
+      console.log('Google email:', firebaseResult.user.email);
+      console.log('Google name:', firebaseResult.user.displayName);
+      console.log('Google photo:', firebaseResult.user.photoURL);
+
+      /*
+       * Hiện tại tất cả tài khoản Google đều là User.
+       *
+       * Sau này có thể kiểm tra role trong Firestore
+       * để chuyển Admin hoặc User.
+       */
+      navigation.reset({
+        index: 0,
+        routes: [{ name: Paths.Startup }],
+      });
+    } catch (loginError: unknown) {
+      console.error('Google Firebase login error:', loginError);
+
+      if (loginError instanceof Error) {
+        setError(`Đăng nhập Google thất bại: ${loginError.message}`);
+      } else {
+        setError(
+          'Đăng nhập Google thất bại. Vui lòng kiểm tra Firebase và thử lại.',
+        );
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   return (
@@ -50,12 +183,24 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
           layout.flex_1,
           layout.itemsCenter,
           layout.justifyCenter,
-          { backgroundColor: '#F5F5F7' },
+          {
+            backgroundColor: '#F5F5F7',
+          },
         ]}
       >
-        <View style={{ width: '90%', maxWidth: 400 }}>
+        <View
+          style={{
+            width: '90%',
+            maxWidth: 400,
+          }}
+        >
           {/* Logo */}
-          <View style={{ alignItems: 'center', marginBottom: 30 }}>
+          <View
+            style={{
+              alignItems: 'center',
+              marginBottom: 30,
+            }}
+          >
             <Text
               style={{
                 fontSize: 42,
@@ -88,7 +233,6 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               elevation: 5,
             }}
           >
-            {/* Title */}
             <Text
               style={{
                 fontSize: 30,
@@ -115,6 +259,8 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               placeholder="Nhập email hoặc tên đăng nhập"
               placeholderTextColor="#999"
               autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!googleLoading}
               style={{
                 backgroundColor: '#F4F4F6',
                 borderRadius: 12,
@@ -140,6 +286,7 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               placeholder="Nhập mật khẩu"
               placeholderTextColor="#999"
               secureTextEntry
+              editable={!googleLoading}
               style={{
                 backgroundColor: '#F4F4F6',
                 borderRadius: 12,
@@ -149,7 +296,7 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               }}
             />
 
-            {/* Remember */}
+            {/* Remember and Forgot Password */}
             <View
               style={{
                 flexDirection: 'row',
@@ -159,7 +306,8 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               }}
             >
               <TouchableOpacity
-                onPress={() => setRemember(!remember)}
+                disabled={googleLoading}
+                onPress={() => setRemember((current) => !current)}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -170,19 +318,30 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
                     width: 18,
                     height: 18,
                     borderWidth: 1,
-                    borderColor: '#999',
+                    borderColor: remember ? '#6B46C1' : '#999',
+                    backgroundColor: remember ? '#6B46C1' : 'transparent',
                     borderRadius: 4,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  {remember && <Text>✓</Text>}
+                  {remember && (
+                    <Text
+                      style={{
+                        color: 'white',
+                        fontSize: 12,
+                        fontWeight: '700',
+                      }}
+                    >
+                      ✓
+                    </Text>
+                  )}
                 </View>
 
                 <Text style={{ marginLeft: 8 }}>Ghi nhớ đăng nhập</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity>
+              <TouchableOpacity disabled={googleLoading}>
                 <Text
                   style={{
                     color: '#6B46C1',
@@ -194,16 +353,26 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               </TouchableOpacity>
             </View>
 
-            {error && (
-              <Text
+            {/* Error */}
+            {error ? (
+              <View
                 style={{
-                  color: 'red',
-                  marginBottom: 10,
+                  backgroundColor: '#FFF0F0',
+                  borderRadius: 10,
+                  padding: 12,
+                  marginBottom: 15,
                 }}
               >
-                {error}
-              </Text>
-            )}
+                <Text
+                  style={{
+                    color: '#D32F2F',
+                    lineHeight: 20,
+                  }}
+                >
+                  {error}
+                </Text>
+              </View>
+            ) : null}
 
             {/* Login button */}
             <Button label="Đăng nhập" onPress={handleLogin} fullWidth />
@@ -242,40 +411,61 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               />
             </View>
 
-            {/* Social */}
-            <View
+            {/* Google Login */}
+            <TouchableOpacity
+              disabled={googleLoading}
+              onPress={handleGoogleLogin}
+              activeOpacity={0.8}
               style={{
+                height: 52,
+                borderWidth: 1,
+                borderColor: '#DDDDDD',
+                borderRadius: 12,
+                backgroundColor: '#FFFFFF',
                 flexDirection: 'row',
                 justifyContent: 'center',
-                gap: 12,
+                alignItems: 'center',
+                opacity: googleLoading ? 0.7 : 1,
               }}
             >
-              <TouchableOpacity
-                style={{
-                  width: 55,
-                  height: 55,
-                  borderRadius: 12,
-                  backgroundColor: '#F5F5F7',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 20 }}>G</Text>
-              </TouchableOpacity>
+              {googleLoading ? (
+                <ActivityIndicator />
+              ) : (
+                <>
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: '#F4F4F6',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginRight: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 17,
+                        fontWeight: '700',
+                        color: '#4285F4',
+                      }}
+                    >
+                      G
+                    </Text>
+                  </View>
 
-              <TouchableOpacity
-                style={{
-                  width: 55,
-                  height: 55,
-                  borderRadius: 12,
-                  backgroundColor: '#F5F5F7',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 20 }}>f</Text>
-              </TouchableOpacity>
-            </View>
+                  <Text
+                    style={{
+                      color: '#333333',
+                      fontSize: 16,
+                      fontWeight: '600',
+                    }}
+                  >
+                    Đăng nhập bằng Google
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
 
             {/* Sign up */}
             <View
@@ -297,7 +487,7 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
               </Text>
             </View>
 
-            {/* Demo account */}
+            {/* Demo accounts */}
             <View
               style={{
                 marginTop: 30,
@@ -306,11 +496,28 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
                 padding: 15,
               }}
             >
-              <View style={{ flexDirection: 'row', marginTop: 12, gap: 12 }}>
+              <Text
+                style={{
+                  fontWeight: '700',
+                  color: '#555',
+                }}
+              >
+                Tài khoản demo
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  marginTop: 12,
+                  gap: 12,
+                }}
+              >
                 <TouchableOpacity
+                  disabled={googleLoading}
                   onPress={() => {
                     setEmail('admin@novatales.com');
                     setPassword('admin');
+
                     navigation.reset({
                       index: 0,
                       routes: [{ name: Paths.Admin }],
@@ -324,15 +531,22 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: 'white', fontWeight: '700' }}>
-                    Đăng nhập Admin
+                  <Text
+                    style={{
+                      color: 'white',
+                      fontWeight: '700',
+                    }}
+                  >
+                    Admin
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  disabled={googleLoading}
                   onPress={() => {
                     setEmail('user@novatales.com');
                     setPassword('user');
+
                     navigation.reset({
                       index: 0,
                       routes: [{ name: Paths.Startup }],
@@ -346,8 +560,13 @@ function Login({ navigation }: RootScreenProps<Paths.Login>) {
                     alignItems: 'center',
                   }}
                 >
-                  <Text style={{ color: '#333', fontWeight: '700' }}>
-                    Đăng nhập User
+                  <Text
+                    style={{
+                      color: '#333',
+                      fontWeight: '700',
+                    }}
+                  >
+                    User
                   </Text>
                 </TouchableOpacity>
               </View>

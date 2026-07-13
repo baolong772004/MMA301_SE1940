@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Alert, View } from 'react-native';
 
 import { Paths } from '@/navigation/paths';
-import type { MainTabScreenProps } from '@/navigation/types';
+import type { MainTabScreenProps, RootStackParamList } from '@/navigation/types';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '@/theme';
 
 import { AppText, Avatar, Button } from '@/components/atoms';
@@ -13,7 +14,10 @@ import { ScreenContainer } from '@/components/templates';
 
 import { profileData } from '@/mocks/profile';
 
+type ProfileNavigationProp = StackNavigationProp<RootStackParamList>;
+
 function Profile({ navigation }: MainTabScreenProps<Paths.Profile>) {
+  const parentNavigation = navigation.getParent<ProfileNavigationProp>();
   const { colors, gutters, layout } = useTheme();
   const { t } = useTranslation();
 
@@ -97,8 +101,8 @@ function Profile({ navigation }: MainTabScreenProps<Paths.Profile>) {
           iconName="person"
           label={t('profile.logout')}
           onPress={() => {
-            // perform logout by resetting to Login screen
-            navigation.reset({ index: 0, routes: [{ name: Paths.Login }] });
+            // perform logout by resetting to Login screen on the root stack
+            parentNavigation?.reset({ index: 0, routes: [{ name: Paths.Login }] });
           }}
         />
       </View>

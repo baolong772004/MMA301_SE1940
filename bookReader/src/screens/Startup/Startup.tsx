@@ -1,4 +1,4 @@
-import type { RootScreenProps } from '@/Navigation/types';
+import type { RootScreenProps } from '@/navigation/types';
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
