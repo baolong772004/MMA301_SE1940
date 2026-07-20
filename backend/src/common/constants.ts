@@ -38,3 +38,14 @@ export const ReportStatus = {
   OPEN: 'OPEN',
   RESOLVED: 'RESOLVED',
 } as const;
+
+export const Visibility = {
+  PRIVATE: 'PRIVATE',
+  PUBLIC: 'PUBLIC',
+} as const;
+
+export const BookSource = {
+  EPUB: 'EPUB',
+  ORIGINAL: 'ORIGINAL',
+  PDF: 'PDF',
+} as const;

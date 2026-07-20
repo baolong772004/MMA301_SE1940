@@ -52,20 +52,24 @@ model OtpCode {
 }
 
 model Story {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @default("")
-  coverUri    String   @default("")
-  genres      String   @default("[]") // JSON string array
-  status      String   @default("ongoing") // ongoing | completed
-  moderation  String   @default("PENDING") // PENDING | APPROVED | REJECTED
-  viewCount   Int      @default(0)
-  ratingSum   Int      @default(0)
-  ratingCount Int      @default(0)
-  ratingAvg   Float    @default(0)
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String   @default("")
+  coverUri      String   @default("")
+  genres        String   @default("[]") // JSON string array
+  status        String   @default("ongoing") // ongoing | completed
+  moderation    String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  visibility    String   @default("PUBLIC") // PUBLIC | PRIVATE (sách import cá nhân)
+  source        String   @default("ORIGINAL") // ORIGINAL | EPUB | PDF
+  sourceFileUri String? // đường dẫn file gốc đã upload (import EPUB/PDF)
+  pageCount     Int? // chỉ có với PDF
+  viewCount     Int      @default(0)
+  ratingSum     Int      @default(0)
+  ratingCount   Int      @default(0)
+  ratingAvg     Float    @default(0)
+  authorId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   author         User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
   chapters       Chapter[]
@@ -84,6 +88,9 @@ model Chapter {
   status      String    @default("DRAFT") // DRAFT | PUBLISHED
   isVip       Boolean   @default(false)
   coinPrice   Int       @default(0)
+  wordCount   Int       @default(0)
+  pageStart   Int? // chỉ có khi import từ PDF (trang bắt đầu)
+  pageEnd     Int? // chỉ có khi import từ PDF (trang kết thúc)
   publishedAt DateTime?
   autoSavedAt DateTime?
   createdAt   DateTime  @default(now())

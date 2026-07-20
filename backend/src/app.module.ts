@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { ChaptersModule } from './chapters/chapters.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ImportsModule } from './imports/imports.module';
 import { LibraryModule } from './library/library.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StoriesModule } from './stories/stories.module';
@@ -26,6 +27,7 @@ import { WalletModule } from './wallet/wallet.module';
     LibraryModule,
     WalletModule,
     AdminModule,
+    ImportsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

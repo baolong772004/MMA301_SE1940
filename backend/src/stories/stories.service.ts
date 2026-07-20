@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { existsSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
 
 import type {
   CreateChapterDto,
@@ -12,7 +14,13 @@ import type {
 } from './dto';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
 
-import { ChapterStatus, Moderation, Roles } from '../common/constants';
+import {
+  BookSource,
+  ChapterStatus,
+  Moderation,
+  Roles,
+  Visibility,
+} from '../common/constants';
 import {
   AUTHOR_SELECT,
   toStoryResponse,
@@ -26,10 +34,13 @@ export const CHAPTER_META_SELECT = {
   id: true,
   index: true,
   isVip: true,
+  pageEnd: true,
+  pageStart: true,
   publishedAt: true,
   status: true,
   storyId: true,
   title: true,
+  wordCount: true,
 } as const;
 
 @Injectable()
@@ -90,6 +101,9 @@ export class StoriesService {
     if (story.moderation !== Moderation.APPROVED && !isOwner) {
       throw new NotFoundException('Truyện không tồn tại');
     }
+    if (story.visibility === Visibility.PRIVATE && !isOwner) {
+      throw new NotFoundException('Truyện không tồn tại');
+    }
 
     const chapters = await this.prisma.chapter.findMany({
       orderBy: { index: 'asc' },
@@ -122,6 +136,7 @@ export class StoriesService {
 
     const where = {
       moderation: Moderation.APPROVED,
+      visibility: Visibility.PUBLIC,
       ...(query.q && { title: { contains: query.q } }),
       ...(query.genre && { genres: { contains: `"${query.genre}"` } }),
       ...(query.status && { status: query.status }),
@@ -202,8 +217,12 @@ export class StoriesService {
   }
 
   async remove(id: string, user: AuthUser) {
-    await this.assertOwner(id, user);
+    const story = await this.assertOwner(id, user);
     await this.prisma.story.delete({ where: { id } });
+    if (story.source !== BookSource.ORIGINAL) {
+      this.cleanupUploadedFile(story.sourceFileUri);
+      this.cleanupUploadedFile(story.coverUri);
+    }
     return { message: 'Đã xóa truyện' };
   }
 
@@ -234,5 +253,18 @@ export class StoriesService {
       throw new ForbiddenException('Bạn không phải tác giả truyện này');
     }
     return story;
+  }
+
+  /** Xóa file gốc/bìa đã upload khi xóa sách import (best-effort, không chặn response). */
+  private cleanupUploadedFile(uri: null | string | undefined) {
+    if (!uri) return;
+    try {
+      const relative = uri.replace(/^https?:\/\/[^/]+/, '');
+      if (!relative.startsWith('/uploads/')) return;
+      const filePath = join(process.cwd(), relative);
+      if (existsSync(filePath)) unlinkSync(filePath);
+    } catch {
+      // best-effort — không chặn việc xóa truyện nếu dọn file thất bại
+    }
   }
 }

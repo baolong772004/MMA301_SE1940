@@ -13,12 +13,15 @@ export type StoryWithAuthor = {
   genres: string;
   id: string;
   moderation: string;
+  pageCount: null | number;
   ratingAvg: number;
   ratingCount: number;
+  source: string;
   status: string;
   title: string;
   updatedAt: Date;
   viewCount: number;
+  visibility: string;
 };
 
 /** Chuẩn hóa Story trả về client: parse genres JSON, làm tròn rating. */
@@ -31,11 +34,14 @@ export function toStoryResponse(story: StoryWithAuthor) {
     genres: JSON.parse(story.genres) as string[],
     id: story.id,
     moderation: story.moderation,
+    pageCount: story.pageCount,
     rating: Math.round(story.ratingAvg * 10) / 10,
     ratingCount: story.ratingCount,
+    source: story.source,
     status: story.status,
     title: story.title,
     updatedAt: story.updatedAt,
     viewCount: story.viewCount,
+    visibility: story.visibility,
   };
 }
