@@ -1,0 +1,206 @@
+// NovaTales — Prisma schema
+// Dev dùng SQLite; đổi sang PostgreSQL chỉ cần sửa provider + DATABASE_URL.
+// SQLite không hỗ trợ enum/array nên các trường enum dùng String (hằng số ở src/common/constants.ts),
+// genres lưu dạng JSON string.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  handle        String   @unique
+  avatarUri     String?
+  role          String   @default("READER") // READER | WRITER | ADMIN
+  status        String   @default("ACTIVE") // ACTIVE | BANNED
+  emailVerified Boolean  @default(false)
+  coinBalance   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stories        Story[]
+  libraryEntries LibraryEntry[]
+  progresses     ReadingProgress[]
+  comments       Comment[]
+  ratings        Rating[]
+  followers      Follow[]          @relation("following")
+  following      Follow[]          @relation("follower")
+  transactions   Transaction[]
+  unlocks        ChapterUnlock[]
+  otpCodes       OtpCode[]
+  reports        Report[]          @relation("reporter")
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  userId     String
+  code       String
+  purpose    String    @default("VERIFY_EMAIL") // VERIFY_EMAIL | RESET_PASSWORD
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Story {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  coverUri    String   @default("")
+  genres      String   @default("[]") // JSON string array
+  status      String   @default("ongoing") // ongoing | completed
+  moderation  String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  viewCount   Int      @default(0)
+  ratingSum   Int      @default(0)
+  ratingCount Int      @default(0)
+  ratingAvg   Float    @default(0)
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author         User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  chapters       Chapter[]
+  libraryEntries LibraryEntry[]
+  progresses     ReadingProgress[]
+  ratings        Rating[]
+  reports        Report[]
+}
+
+model Chapter {
+  id          String    @id @default(cuid())
+  storyId     String
+  index       Int
+  title       String
+  content     String    @default("")
+  status      String    @default("DRAFT") // DRAFT | PUBLISHED
+  isVip       Boolean   @default(false)
+  coinPrice   Int       @default(0)
+  publishedAt DateTime?
+  autoSavedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  story      Story             @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  comments   Comment[]
+  unlocks    ChapterUnlock[]
+  progresses ReadingProgress[]
+
+  @@unique([storyId, index])
+}
+
+model LibraryEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  storyId   String
+  shelf     String   @default("SAVED") // READING | SAVED | COMPLETED
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model ReadingProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  storyId   String
+  chapterId String
+  position  Float    @default(0) // 0..1 (tỷ lệ cuộn trong chương)
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story   Story   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model Comment {
+  id             String   @id @default(cuid())
+  chapterId      String
+  userId         String
+  paragraphIndex Int
+  content        String
+  hidden         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  chapter Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports Report[]
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  storyId   String
+  stars     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String // TOPUP | UNLOCK
+  amount      Int // xu: dương = cộng, âm = trừ
+  description String   @default("")
+  chapterId   String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChapterUnlock {
+  id        String   @id @default(cuid())
+  userId    String
+  chapterId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+}
+
+model Report {
+  id           String    @id @default(cuid())
+  reporterId   String
+  storyId      String?
+  commentId    String?
+  reason       String
+  status       String    @default("OPEN") // OPEN | RESOLVED | DISMISSED
+  resolvedById String?
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+
+  reporter User     @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  story    Story?   @relation(fields: [storyId], references: [id], onDelete: SetNull)
+  comment  Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+}
