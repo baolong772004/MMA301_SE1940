@@ -12,3 +12,5 @@ export { default as Admin } from './Admin/AdminHome';
 export { default as StoryDetail } from './StoryDetail/StoryDetail';
 export { default as Streak } from './Streak/Streak';
 export { default as Write } from './Write/Write';
+export { default as Register } from './Register/Register';
+export { default as VerifyOtp } from './VerifyOtp/VerifyOtp';

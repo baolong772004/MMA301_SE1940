@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useTheme } from '@/theme';
 import type { Colors } from '@/theme/types/colors';
 
-import { AppText } from '@/components/atoms';
+import AppText from '../AppText/AppText';
 
 type Properties = {
   readonly label: string;

@@ -1,13 +1,14 @@
-/* eslint-disable no-magic-numbers */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 
 import { Paths } from '@/navigation/paths';
 import type { MainTabScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
+import { StoriesServices } from '@/services/stories';
 
-import { Skeleton } from '@/components/atoms';
+import { Skeleton, AppText } from '@/components/atoms';
 import {
   ContinueReadingCard,
   SearchBar,
@@ -16,25 +17,22 @@ import {
 import { Banner, StoryCarousel } from '@/components/organisms';
 import { ScreenContainer } from '@/components/templates';
 
-import {
-  continueReading,
-  featuredStory,
-  recommendedStories,
-} from '@/mocks/stories';
-
 function Home({ navigation }: MainTabScreenProps<Paths.Home>) {
   const { borders, gutters, layout } = useTheme();
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
+  // Fetch public approved stories
+  const { data: storiesResponse, isLoading: isFetchingStories } = useQuery({
+    queryKey: ['home-stories'],
+    queryFn: () => StoriesServices.getStories({ limit: 10 }),
+  });
+
+  const isLoading = isFetchingStories;
+  const stories = storiesResponse?.items ?? [];
+
+  // Determine featured story (first approved story) and recommended list
+  const featured = stories.length > 0 ? stories[0] : null;
+  const recommended = stories.length > 1 ? stories.slice(1) : stories;
 
   return (
     <ScreenContainer
@@ -44,6 +42,7 @@ function Home({ navigation }: MainTabScreenProps<Paths.Home>) {
       rightIcon="search"
       title="NovaTales"
     >
+      {/* Search Input Link */}
       <Pressable
         onPress={() => {
           navigation.navigate(Paths.Search);
@@ -56,6 +55,7 @@ function Home({ navigation }: MainTabScreenProps<Paths.Home>) {
         </View>
       </Pressable>
 
+      {/* Featured Banner */}
       {isLoading ? (
         <Skeleton
           height={200}
@@ -63,15 +63,20 @@ function Home({ navigation }: MainTabScreenProps<Paths.Home>) {
           style={borders.rounded_16}
           width="100%"
         />
-      ) : (
+      ) : featured ? (
         <Banner
           onPress={(story) => {
             navigation.navigate(Paths.StoryDetail, { storyId: story.id });
           }}
-          story={featuredStory}
+          story={featured as any}
         />
+      ) : (
+        <View style={{ backgroundColor: '#F4F4F6', borderRadius: 16, padding: 32, alignItems: 'center' }}>
+          <AppText color="onSurfaceVariant" variant="bodyMd">Chào mừng bạn đến với NovaTales!</AppText>
+        </View>
       )}
 
+      {/* Recommended Carousel */}
       <View style={gutters.gap_12}>
         <SectionHeader
           actionLabel={t('home.see_all')}
@@ -82,8 +87,8 @@ function Home({ navigation }: MainTabScreenProps<Paths.Home>) {
         />
         {isLoading ? (
           <View style={[layout.row, gutters.gap_12]}>
-            {[1, 2, 3].map((key) => (
-              <View key={key} style={[gutters.gap_8, { width: 150 }]}>
+            {[1, 2, 3].map((num) => (
+              <View key={`rec-skel-${num}`} style={[gutters.gap_8, { width: 150 }]}>
                 <Skeleton
                   height={225}
                   loading
@@ -95,40 +100,20 @@ function Home({ navigation }: MainTabScreenProps<Paths.Home>) {
               </View>
             ))}
           </View>
-        ) : (
+        ) : recommended.length > 0 ? (
           <StoryCarousel
-            data={recommendedStories}
+            data={recommended as any[]}
             onPressItem={(story) => {
               navigation.navigate(Paths.StoryDetail, { storyId: story.id });
             }}
           />
+        ) : (
+          <View style={{ backgroundColor: '#F4F4F6', borderRadius: 12, padding: 24, alignItems: 'center' }}>
+            <AppText color="onSurfaceVariant" variant="bodyMd">Chưa có truyện đề xuất.</AppText>
+          </View>
         )}
       </View>
 
-      <View style={gutters.gap_12}>
-        <SectionHeader title={t('home.continue_reading_title')} />
-        <View style={gutters.gap_12}>
-          {isLoading
-            ? [1, 2].map((key) => (
-                <Skeleton
-                  height={96}
-                  key={key}
-                  loading
-                  style={borders.rounded_12}
-                  width="100%"
-                />
-              ))
-            : continueReading.map((progress) => (
-                <ContinueReadingCard
-                  item={progress}
-                  key={progress.story.id}
-                  onPress={() => {
-                    navigation.navigate(Paths.Reader, { storyId: progress.story.id });
-                  }}
-                />
-              ))}
-        </View>
-      </View>
     </ScreenContainer>
   );
 }

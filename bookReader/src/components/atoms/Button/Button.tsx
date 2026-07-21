@@ -3,7 +3,8 @@ import { Pressable } from 'react-native';
 import { useTheme } from '@/theme';
 import type { Colors } from '@/theme/types/colors';
 
-import { AppIcon, AppText } from '@/components/atoms';
+import AppIcon from '../AppIcon/AppIcon';
+import AppText from '../AppText/AppText';
 
 type Properties = {
   readonly disabled?: boolean;

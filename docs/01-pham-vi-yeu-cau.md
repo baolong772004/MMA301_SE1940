@@ -5,15 +5,15 @@ Tài liệu tóm tắt các yêu cầu từ PRD, làm cơ sở đối chiếu ti
 
 ## 1. Nhóm tính năng nghiệp vụ (Business Features)
 
-| # | Nhóm tính năng | Mô tả ngắn |
-|---|----------------|-----------|
-| F1 | Xác thực & Định danh | Đăng ký, đăng nhập, xác thực OTP qua email |
-| F2 | Không gian Độc giả | Tìm kiếm, bộ lọc truyện, Thư viện cá nhân, Trình đọc tùy biến |
-| F3 | Tương tác Cộng đồng | Inline comment, đánh giá/vote (sao), theo dõi tác giả |
-| F4 | Studio Sáng tác | Viết truyện, quản lý chương, auto-save nháp, xuất bản |
-| F5 | Đọc ngoại tuyến | Tự động cache chương kế tiếp để đọc khi mất mạng |
-| F6 | Kiếm tiền (Monetization) | Nạp xu, mở khóa chương VIP qua cổng thanh toán |
-| F7 | Admin Dashboard | Kiểm duyệt nội dung, xử lý report, cấu hình banner/sự kiện |
+| #   | Nhóm tính năng           | Mô tả ngắn                                                    |
+| -----| --------------------------| ---------------------------------------------------------------|
+| F1  | Xác thực & Định danh     | Đăng ký, đăng nhập, xác thực OTP qua email                    |
+| F2  | Không gian Độc giả       | Tìm kiếm, bộ lọc truyện, Thư viện cá nhân, Trình đọc tùy biến |
+| F3  | Tương tác Cộng đồng      | Inline comment, đánh giá/vote (sao), theo dõi tác giả         |
+| F4  | Studio Sáng tác          | Viết truyện, quản lý chương, auto-save nháp, xuất bản         |
+| F5  | Đọc ngoại tuyến          | Tự động cache chương kế tiếp để đọc khi mất mạng              |
+| F6  | Kiếm tiền (Monetization) | Nạp xu, mở khóa chương VIP qua cổng thanh toán                |
+| F7  | Admin Dashboard          | Kiểm duyệt nội dung, xử lý report, cấu hình banner/sự kiện    |
 
 ## 2. Vai trò người dùng (User Roles)
 

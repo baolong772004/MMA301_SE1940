@@ -8,17 +8,21 @@ import { AppText, Cover } from '@/components/atoms';
 
 type Properties = {
   readonly onPress?: (story: Story) => void;
+  readonly onLongPress?: (story: Story) => void;
   readonly story: Story;
   readonly width?: number;
 };
 
-function StoryCard({ onPress = undefined, story, width = 150 }: Properties) {
+function StoryCard({ onPress = undefined, onLongPress = undefined, story, width = 150 }: Properties) {
   const { gutters } = useTheme();
 
   return (
     <Pressable
       onPress={() => {
         onPress?.(story);
+      }}
+      onLongPress={() => {
+        onLongPress?.(story);
       }}
       style={[gutters.gap_8, { width }]}
     >

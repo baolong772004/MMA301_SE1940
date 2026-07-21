@@ -1,7 +1,7 @@
 import { useTheme } from '@/theme';
 import type { Colors } from '@/theme/types/colors';
 
-import { IconByVariant } from '@/components/atoms';
+import IconByVariant from '../IconByVariant/IconByVariant';
 
 type Properties = {
   readonly color?: keyof Colors;

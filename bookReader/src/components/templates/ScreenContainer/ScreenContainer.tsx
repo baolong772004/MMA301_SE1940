@@ -5,7 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { useTheme } from '@/theme';
 
 import { TopAppBar } from '@/components/organisms';
-import { SafeScreen } from '@/components/templates';
+import SafeScreen from '../SafeScreen/SafeScreen';
 
 type Properties = PropsWithChildren<{
   readonly isError?: boolean;

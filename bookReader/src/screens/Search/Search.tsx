@@ -2,6 +2,7 @@
 /* eslint-disable unicorn/no-array-sort */
 import type { Story } from '@/models';
 
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dimensions, FlatList, Pressable, ScrollView, View } from 'react-native';
@@ -9,12 +10,12 @@ import { Dimensions, FlatList, Pressable, ScrollView, View } from 'react-native'
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
+import { StoriesServices } from '@/services/stories';
 
 import { AppIcon, AppText, Skeleton, Tag } from '@/components/atoms';
 import { SearchBar, StoryCard } from '@/components/molecules';
 import { ScreenContainer } from '@/components/templates';
 
-import { recommendedStories } from '@/mocks/stories';
 
 const GENRES = ['All', 'Fantasy', 'Adventure', 'Mystery', 'Sci-Fi', 'Romance', 'Drama'];
 const STATUSES = [
@@ -43,16 +44,25 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedSort, setSelectedSort] = useState('Default');
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [query, selectedGenre, selectedStatus, selectedSort]);
+  const sortValue = selectedSort === 'Rating' ? 'rating' : selectedSort === 'Views' ? 'views' : 'newest';
+  const genreValue = selectedGenre !== 'All' ? selectedGenre : undefined;
+  const statusValue = selectedStatus !== 'All' ? selectedStatus : undefined;
+  const qValue = query.trim() || undefined;
+
+  const { data: apiResponse, isLoading: isApiLoading } = useQuery({
+    queryKey: ['stories-search', qValue, genreValue, statusValue, sortValue],
+    queryFn: () => StoriesServices.getStories({
+      q: qValue,
+      genre: genreValue,
+      status: statusValue as any,
+      sort: sortValue as any,
+      page: 1,
+      limit: 20,
+    }),
+  });
+
+  const isLoading = isApiLoading;
 
   const screenWidth = Dimensions.get('window').width;
   const numberColumns = 4;
@@ -63,48 +73,21 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
       numberColumns,
   );
 
-  const filteredStories = recommendedStories
-    .filter((story) => {
-      // 1. Text Query Filter
-      if (query.trim()) {
-        const term = query.toLowerCase();
-        const matchesTitle = story.title.toLowerCase().includes(term);
-        const matchesAuthor = story.author.name.toLowerCase().includes(term);
-        const matchesGenre = story.genres?.some((g) =>
-          g.toLowerCase().includes(term),
-        );
-        if (!matchesTitle && !matchesAuthor && !matchesGenre) {
-          return false;
-        }
-      }
+  const apiStories = (apiResponse?.items ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    coverUri: item.coverUri ?? '',
+    author: {
+      name: item.author?.name ?? 'Tác giả',
+      avatarUri: item.author?.avatarUri ?? undefined,
+    },
+    rating: item.rating ?? 0,
+    views: String(item.viewCount ?? 0),
+    genres: item.genres ?? [],
+    status: item.status ?? 'ongoing',
+  }));
 
-      // 2. Genre Filter
-      if (selectedGenre !== 'All') {
-        const hasGenre = story.genres?.some(
-          (g) => g.toLowerCase() === selectedGenre.toLowerCase(),
-        );
-        if (!hasGenre) {
-          return false;
-        }
-      }
-
-      // 3. Status Filter
-      if (selectedStatus !== 'All' && story.status !== selectedStatus) {
-          return false;
-        }
-
-      return true;
-    })
-    .sort((a, b) => {
-      // 4. Sort Filter
-      if (selectedSort === 'Rating') {
-        return (b.rating ?? 0) - (a.rating ?? 0);
-      }
-      if (selectedSort === 'Views') {
-        return parseViews(b.views) - parseViews(a.views);
-      }
-      return 0;
-    });
+  const displayStories = apiStories as unknown as Story[];
 
   const customHeaderStyle = [
     layout.row,
@@ -143,10 +126,7 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
           <View style={layout.flex_1}>
             <SearchBar
               autoFocus
-              onChangeText={(text) => {
-                setQuery(text);
-                setIsLoading(true);
-              }}
+              onChangeText={setQuery}
               placeholder={t('home.search_placeholder')}
               value={query}
             />
@@ -161,14 +141,13 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
             horizontal
             showsHorizontalScrollIndicator={false}
           >
-            {GENRES.map((genre) => {
+            {GENRES.map((genre, index) => {
               const active = selectedGenre === genre;
               return (
                 <Pressable
-                  key={genre}
+                  key={`${genre}-${index}`}
                   onPress={() => {
                     setSelectedGenre(genre);
-                    setIsLoading(true);
                   }}
                 >
                   <Tag label={genre} tone={active ? 'primary' : 'neutral'} />
@@ -190,7 +169,6 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
                   key={status.value}
                   onPress={() => {
                     setSelectedStatus(status.value);
-                    setIsLoading(true);
                   }}
                 >
                   <Tag label={status.label} tone={active ? 'primary' : 'neutral'} />
@@ -212,7 +190,6 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
                   key={sort}
                   onPress={() => {
                     setSelectedSort(sort);
-                    setIsLoading(true);
                   }}
                 >
                   <Tag label={sort} tone={active ? 'primary' : 'neutral'} />
@@ -230,7 +207,7 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
             gutters.paddingHorizontal_24,
             gutters.paddingBottom_24,
           ]}
-          data={isLoading ? loadingData : filteredStories}
+          data={isLoading ? loadingData : displayStories}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
             isLoading ? undefined : (

@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { useTheme } from '@/theme';
 
-import { AppText, Cover, ProgressBar } from '@/components/atoms';
+import { AppText, Cover } from '@/components/atoms';
 
 type Properties = {
   readonly item: ReadingProgress;
@@ -13,7 +13,8 @@ type Properties = {
 
 function ContinueReadingCard({ item, onPress = undefined }: Properties) {
   const { backgrounds, borders, gutters, layout } = useTheme();
-  const { chapterLabel, progress, story } = item;
+  const { chapterLabel, lastReadChapter, story } = item;
+  const displayLabel = chapterLabel ?? lastReadChapter;
 
   return (
     <Pressable
@@ -30,22 +31,12 @@ function ContinueReadingCard({ item, onPress = undefined }: Properties) {
       ]}
     >
       <Cover uri={story.coverUri} width={56} />
-      <View style={[layout.flex_1, gutters.gap_8]}>
-        <View style={gutters.gap_4}>
-          <AppText color="onSurface" numberOfLines={1} variant="labelMd">
-            {story.title}
-          </AppText>
-          <AppText color="onSurfaceVariant" numberOfLines={1} variant="labelSm">
-            {chapterLabel}
-          </AppText>
-        </View>
-        <ProgressBar value={progress} />
-        <AppText
-          color="onSurfaceVariant"
-          style={{ textAlign: 'right' }}
-          variant="labelSm"
-        >
-          {Math.round(progress * 100)}%
+      <View style={[layout.flex_1, gutters.gap_4]}>
+        <AppText color="onSurface" numberOfLines={1} variant="labelMd">
+          {story.title}
+        </AppText>
+        <AppText color="onSurfaceVariant" numberOfLines={1} variant="labelSm">
+          {displayLabel}
         </AppText>
       </View>
     </Pressable>

@@ -1,19 +1,23 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable no-magic-numbers */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
+import { ChaptersServices } from '@/services/chapters';
+import { LibraryServices } from '@/services/library';
+import { parseApiError } from '@/services/auth';
 
 import { AppIcon, AppText, Button, ProgressBar } from '@/components/atoms';
 import { ScreenContainer } from '@/components/templates';
 
-import { chapters } from '@/mocks/stories';
 
-function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
+function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
+  const { chapterId, storyId } = route.params ?? {};
   const {
     backgrounds,
     borders,
@@ -24,30 +28,89 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
     variant,
   } = useTheme();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
   const [controlsVisible, setControlsVisible] = useState(true);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [commentsVisible, setCommentsVisible] = useState(false);
   const [fontSize, setFontSize] = useState(20);
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(1);
+  const [activeChapterId, setActiveChapterId] = useState<string | undefined>(chapterId);
+  const [unlocking, setUnlocking] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
 
-  const currentChapter =
-    chapters.find((c) => c.index === currentChapterIndex) ?? chapters[0];
-  const maxChapters = chapters.length;
-  const progress = currentChapterIndex / maxChapters;
+  // Tự động lưu vị trí đọc dở lên server (PUT /library/:storyId/progress)
+  useEffect(() => {
+    if (storyId && activeChapterId) {
+      LibraryServices.upsertProgress(storyId, activeChapterId, 0)
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: ['story-progress', storyId] });
+          void queryClient.invalidateQueries({ queryKey: ['library'] });
+          void queryClient.invalidateQueries({ queryKey: ['continue-reading'] });
+        })
+        .catch(() => {});
+    }
+  }, [storyId, activeChapterId, queryClient]);
+
+  const { data: chapterDetail, isLoading } = useQuery({
+    queryKey: ['chapter-detail', activeChapterId],
+    queryFn: () => ChaptersServices.getChapterDetail(activeChapterId!),
+    enabled: !!activeChapterId,
+  });
+
+  const { data: commentsList, isLoading: isFetchingComments } = useQuery({
+    queryKey: ['chapter-comments', activeChapterId],
+    queryFn: () => ChaptersServices.getComments(activeChapterId!),
+    enabled: !!activeChapterId,
+  });
+
+  async function handleUnlockChapter() {
+    if (!activeChapterId) return;
+    setUnlocking(true);
+    try {
+      const res = await ChaptersServices.unlockChapter(activeChapterId);
+      Alert.alert('Thành công', `Đã mở khóa chương thành công! Số xu còn lại: ${res.coinBalance}`);
+      await queryClient.invalidateQueries({ queryKey: ['chapter-detail', activeChapterId] });
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Mở khóa chương thất bại.');
+      Alert.alert('Thông báo', errorMsg);
+    } finally {
+      setUnlocking(false);
+    }
+  }
+
+  async function handleSendComment() {
+    if (!commentText.trim() || !activeChapterId) return;
+    setPostingComment(true);
+    try {
+      await ChaptersServices.createComment(activeChapterId, { content: commentText.trim() });
+      setCommentText('');
+      await queryClient.invalidateQueries({ queryKey: ['chapter-comments', activeChapterId] });
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Bình luận thất bại.');
+      Alert.alert('Thông báo', errorMsg);
+    } finally {
+      setPostingComment(false);
+    }
+  }
+
+  const title = chapterDetail?.title ?? 'Đang tải...';
+  const isLocked = chapterDetail?.locked ?? false;
+  const contentText = chapterDetail?.content ?? '';
 
   const toggleControls = () => {
     setControlsVisible(!controlsVisible);
   };
 
   const handlePrevious = () => {
-    if (currentChapterIndex > 1) {
-      setCurrentChapterIndex(currentChapterIndex - 1);
+    if (chapterDetail?.previousChapterId) {
+      setActiveChapterId(chapterDetail.previousChapterId);
     }
   };
 
   const handleNext = () => {
-    if (currentChapterIndex < maxChapters) {
-      setCurrentChapterIndex(currentChapterIndex + 1);
+    if (chapterDetail?.nextChapterId) {
+      setActiveChapterId(chapterDetail.nextChapterId);
     }
   };
 
@@ -140,10 +203,67 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
               style={{ fontSize, lineHeight: fontSize * 1.8 }}
               variant="readingText"
             >
-              {currentChapter.title}
+              {title}
               {'\n\n'}
-              {t('reader.mock_chapter_text')}
             </AppText>
+
+            {isLoading ? (
+              <AppText color="onSurfaceVariant" variant="bodyMd">
+                Đang tải nội dung chương...
+              </AppText>
+            ) : isLocked ? (
+              <View style={{ backgroundColor: colors.surfaceVariant, borderRadius: 16, padding: 24, alignItems: 'center' }}>
+                <AppIcon color="primary" name="lock" size={40} />
+                <AppText color="onSurface" variant="headlineMd" style={{ marginVertical: 12, textAlign: 'center' }}>
+                  Chương VIP chưa mở khóa
+                </AppText>
+                <AppText color="onSurfaceVariant" variant="bodyMd" style={{ textAlign: 'center', marginBottom: 20 }}>
+                  Bạn cần {chapterDetail?.coinPrice ?? 0} xu để đọc nội dung chương này.
+                </AppText>
+                <Button
+                  label={unlocking ? 'Đang mở khóa...' : `Mở khóa ngay (${chapterDetail?.coinPrice ?? 0} xu)`}
+                  onPress={handleUnlockChapter}
+                  disabled={unlocking}
+                />
+              </View>
+            ) : (
+              <View>
+                <AppText
+                  color="onSurface"
+                  style={{ fontSize, lineHeight: fontSize * 1.8 }}
+                  variant="readingText"
+                >
+                  {contentText}
+                </AppText>
+
+                {/* Inline Comment Section */}
+                <View style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: colors.outlineVariant, paddingTop: 20 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <AppText color="onSurface" variant="headlineMd">
+                      Bình luận ({commentsList?.length ?? 0})
+                    </AppText>
+                    <Button label="Xem tất cả" onPress={() => setCommentsVisible(true)} variant="outlined" />
+                  </View>
+
+                  {Array.isArray(commentsList) && commentsList.length > 0 ? (
+                    commentsList.slice(0, 3).map((cmt: any) => (
+                      <View key={cmt.id} style={{ backgroundColor: colors.surfaceVariant, borderRadius: 12, padding: 12, marginBottom: 10 }}>
+                        <AppText color="primary" variant="labelMd" style={{ marginBottom: 4 }}>
+                          {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle}` : ''}
+                        </AppText>
+                        <AppText color="onSurface" variant="bodyMd">
+                          {cmt.content}
+                        </AppText>
+                      </View>
+                    ))
+                  ) : (
+                    <AppText color="onSurfaceVariant" variant="bodyMd" style={{ fontStyle: 'italic' }}>
+                      Chưa có bình luận nào. Hãy là người đầu tiên để lại ý kiến!
+                    </AppText>
+                  )}
+                </View>
+              </View>
+            )}
           </ScrollView>
         </Pressable>
 
@@ -160,33 +280,31 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
             </Pressable>
             <AppText
               color="onSurface"
+              numberOfLines={1}
               style={{ flex: 1, marginHorizontal: 16, textAlign: 'center' }}
               variant="headlineMd"
             >
-              {currentChapter.title}
+              {title}
             </AppText>
-            <Pressable
-              hitSlop={8}
-              onPress={() => {
-                setSettingsVisible(true);
-              }}
-            >
-              <AppIcon color="primary" name="settings" />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+              <Pressable hitSlop={8} onPress={() => setCommentsVisible(true)}>
+                <AppIcon color="primary" name="chat" />
+              </Pressable>
+              <Pressable
+                hitSlop={8}
+                onPress={() => {
+                  setSettingsVisible(true);
+                }}
+              >
+                <AppIcon color="primary" name="settings" />
+              </Pressable>
+            </View>
           </View>
         ) : undefined}
 
         {/* Overlay Bottom Bar */}
         {controlsVisible ? (
           <View style={bottomStyle}>
-            <View style={[layout.row, layout.itemsCenter, gutters.gap_12]}>
-              <AppText color="onSurfaceVariant" variant="labelSm">
-                {Math.round(progress * 100)}%
-              </AppText>
-              <View style={layout.flex_1}>
-                <ProgressBar value={progress} />
-              </View>
-            </View>
             <View
               style={[
                 layout.row,
@@ -197,7 +315,7 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
             >
               <View style={layout.flex_1}>
                 <Button
-                  disabled={currentChapterIndex === 1}
+                  disabled={!chapterDetail?.previousChapterId}
                   label={t('reader.prev_chapter')}
                   onPress={handlePrevious}
                   variant="outlined"
@@ -205,7 +323,7 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
               </View>
               <View style={layout.flex_1}>
                 <Button
-                  disabled={currentChapterIndex === maxChapters}
+                  disabled={!chapterDetail?.nextChapterId}
                   label={t('reader.next_chapter')}
                   onPress={handleNext}
                   variant="filled"
@@ -330,6 +448,67 @@ function Reader({ navigation }: RootScreenProps<Paths.Reader>) {
                     </AppText>
                   </Pressable>
                 </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Inline Comments Sheet Modal */}
+        <Modal
+          animationType="slide"
+          onRequestClose={() => setCommentsVisible(false)}
+          transparent
+          visible={commentsVisible}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+            <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <AppText color="onSurface" variant="headlineMd">
+                  Bình luận ({commentsList?.length ?? 0})
+                </AppText>
+                <Pressable onPress={() => setCommentsVisible(false)}>
+                  <AppText color="primary" variant="labelMd">Đóng</AppText>
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                {Array.isArray(commentsList) && commentsList.length > 0 ? (
+                  commentsList.map((cmt: any) => (
+                    <View key={cmt.id} style={{ backgroundColor: '#F4F4F6', borderRadius: 12, padding: 12, marginBottom: 10 }}>
+                      <AppText color="primary" variant="labelMd" style={{ marginBottom: 4 }}>
+                        {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle}` : ''}
+                      </AppText>
+                      <AppText color="onSurface" variant="bodyMd">
+                        {cmt.content}
+                      </AppText>
+                    </View>
+                  ))
+                ) : (
+                  <AppText color="onSurfaceVariant" variant="bodyMd" style={{ fontStyle: 'italic', marginVertical: 12 }}>
+                    Chưa có bình luận nào. Hãy gửi bình luận đầu tiên!
+                  </AppText>
+                )}
+              </ScrollView>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 16, alignItems: 'center' }}>
+                <TextInput
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  placeholder="Nhập ý kiến của bạn..."
+                  placeholderTextColor="#999"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#F4F4F6',
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                />
+                <Button
+                  label={postingComment ? '...' : 'Gửi'}
+                  onPress={handleSendComment}
+                  disabled={postingComment || !commentText.trim()}
+                />
               </View>
             </View>
           </View>

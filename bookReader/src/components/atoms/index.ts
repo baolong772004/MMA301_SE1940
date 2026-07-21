@@ -1,3 +1,4 @@
+// Re-export all atoms
 export { default as AppIcon } from './AppIcon/AppIcon';
 export { default as AppText } from './AppText/AppText';
 export { default as AssetByVariant } from './AssetByVariant/AssetByVariant';
