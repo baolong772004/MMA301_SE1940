@@ -9,7 +9,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? '*',
+    credentials: true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({ transform: true, whitelist: true }),
   );

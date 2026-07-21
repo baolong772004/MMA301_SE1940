@@ -20,10 +20,14 @@ import {
 } from '../common/constants';
 import { AUTHOR_SELECT, toStoryResponse } from '../common/utils/story-mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ── Reports ──────────────────────────────────────────────────────────────────
 
@@ -142,10 +146,26 @@ export class AdminService {
       throw new NotFoundException('Truyện không tồn tại');
     }
 
-    return this.prisma.story.update({
+    const updated = await this.prisma.story.update({
       data: { moderation },
       where: { id },
     });
+
+    if (moderation === Moderation.APPROVED) {
+      await this.notificationsService.createNotification(
+        story.authorId,
+        'Truyện đã được duyệt',
+        `Truyện "${story.title}" của bạn đã được duyệt và công khai.`,
+      );
+    } else if (moderation === Moderation.REJECTED) {
+      await this.notificationsService.createNotification(
+        story.authorId,
+        'Truyện bị từ chối duyệt',
+        `Truyện "${story.title}" của bạn đã bị từ chối duyệt. Lý do: ${note}`,
+      );
+    }
+
+    return updated;
   }
 
   // ── Users ─────────────────────────────────────────────────────────────────────

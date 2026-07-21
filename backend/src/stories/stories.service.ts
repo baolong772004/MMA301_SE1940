@@ -48,25 +48,27 @@ export class StoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateStoryDto, user: AuthUser) {
-    const story = await this.prisma.story.create({
-      data: {
-        authorId: user.id,
-        coverUri: dto.coverUri ?? '',
-        description: dto.description ?? '',
-        genres: JSON.stringify(dto.genres ?? []),
-        status: dto.status ?? 'ongoing',
-        title: dto.title,
-      },
-      include: { author: { select: AUTHOR_SELECT } },
-    });
-    // Tạo truyện đầu tiên -> lên vai trò WRITER
-    if (user.role === Roles.READER) {
-      await this.prisma.user.update({
-        data: { role: Roles.WRITER },
-        where: { id: user.id },
+    return this.prisma.$transaction(async (tx) => {
+      const story = await tx.story.create({
+        data: {
+          authorId: user.id,
+          coverUri: dto.coverUri ?? '',
+          description: dto.description ?? '',
+          genres: JSON.stringify(dto.genres ?? []),
+          status: dto.status ?? 'ongoing',
+          title: dto.title,
+        },
+        include: { author: { select: AUTHOR_SELECT } },
       });
-    }
-    return toStoryResponse(story);
+      // Tạo truyện đầu tiên -> lên vai trò WRITER
+      if (user.role === Roles.READER) {
+        await tx.user.update({
+          data: { role: Roles.WRITER },
+          where: { id: user.id },
+        });
+      }
+      return toStoryResponse(story);
+    });
   }
 
   async createChapter(storyId: string, dto: CreateChapterDto, user: AuthUser) {

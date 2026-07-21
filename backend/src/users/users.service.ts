@@ -98,4 +98,30 @@ export class UsersService {
     });
     return { following: false };
   }
+
+  async getStreak(user: AuthUser) {
+    const userData = await this.prisma.user.findUniqueOrThrow({
+      select: { currentStreak: true, longestStreak: true, lastReadAt: true },
+      where: { id: user.id },
+    });
+
+    const progresses = await this.prisma.readingProgress.findMany({
+      select: { updatedAt: true },
+      where: { userId: user.id },
+    });
+
+    const uniqueDates = new Set(
+      progresses.map((p) => p.updatedAt.toISOString().slice(0, 10)),
+    );
+
+    if (userData.lastReadAt) {
+      uniqueDates.add(userData.lastReadAt.toISOString().slice(0, 10));
+    }
+
+    return {
+      currentStreak: userData.currentStreak,
+      longestStreak: userData.longestStreak,
+      totalReadingDays: uniqueDates.size,
+    };
+  }
 }
