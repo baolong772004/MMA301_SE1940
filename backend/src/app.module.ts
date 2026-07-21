@@ -11,6 +11,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { ImportsModule } from './imports/imports.module';
 import { LibraryModule } from './library/library.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.module';
 import { StoriesModule } from './stories/stories.module';
 import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
@@ -27,6 +28,7 @@ import { WalletModule } from './wallet/wallet.module';
     LibraryModule,
     WalletModule,
     AdminModule,
+    ReportsModule,
     ImportsModule,
   ],
   providers: [

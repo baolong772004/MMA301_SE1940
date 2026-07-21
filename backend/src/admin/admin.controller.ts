@@ -4,14 +4,18 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { AdminService } from './admin.service';
 import {
-  CreateReportDto,
+  ListUsersQueryDto,
   ModerateStoryDto,
   ResolveReportDto,
   UpdateUserDto,
@@ -23,65 +27,76 @@ import {
 } from '../common/decorators/current-user.decorator';
 import { RequireRoles } from '../common/decorators/roles.decorator';
 
+/**
+ * AdminController — chỉ dành cho ADMIN role.
+ * Prefix: /admin
+ *
+ * Lưu ý: createReport (mọi user) nằm ở ReportsController (/reports).
+ */
 @ApiBearerAuth()
 @ApiTags('admin')
-@Controller()
+@Controller('admin')
+@RequireRoles(Roles.ADMIN)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @ApiOperation({ summary: 'Báo cáo truyện / bình luận vi phạm (mọi user)' })
-  @Post('reports')
-  createReport(@Body() dto: CreateReportDto, @CurrentUser() user: AuthUser) {
-    return this.adminService.createReport(dto, user);
-  }
+  // ── Dashboard Stats ───────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Thống kê toàn app (admin)' })
-  @Get('admin/stats')
-  @RequireRoles(Roles.ADMIN)
+  @ApiOperation({
+    summary: 'Thống kê toàn app: users, stories, coins, active users 30d, ...',
+  })
+  @Get('stats')
   stats() {
     return this.adminService.stats();
   }
 
-  @ApiOperation({ summary: 'Danh sách user (admin)' })
-  @Get('admin/users')
-  @RequireRoles(Roles.ADMIN)
-  listUsers() {
-    return this.adminService.listUsers();
+  // ── User Management ───────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Danh sách user (phân trang + tìm kiếm)' })
+  @Get('users')
+  listUsers(@Query() query: ListUsersQueryDto) {
+    return this.adminService.listUsers(query);
   }
 
-  @ApiOperation({ summary: 'Khóa/mở user, đổi vai trò (admin)' })
-  @Patch('admin/users/:id')
-  @RequireRoles(Roles.ADMIN)
-  updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.adminService.updateUser(id, dto);
+  @ApiOperation({ summary: 'Khóa/mở user, đổi vai trò (admin không thể tự đổi chính mình)' })
+  @Patch('users/:id')
+  updateUser(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() admin: AuthUser,
+  ) {
+    return this.adminService.updateUser(id, dto, admin);
   }
 
-  @ApiOperation({ summary: 'Danh sách truyện theo trạng thái kiểm duyệt (admin)' })
-  @ApiQuery({ name: 'moderation', required: false })
-  @Get('admin/stories')
-  @RequireRoles(Roles.ADMIN)
+  // ── Story Moderation ──────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Danh sách truyện theo trạng thái kiểm duyệt' })
+  @ApiQuery({ name: 'moderation', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED'] })
+  @Get('stories')
   listStories(@Query('moderation') moderation?: string) {
     return this.adminService.listStories(moderation);
   }
 
-  @ApiOperation({ summary: 'Duyệt / từ chối truyện (admin)' })
-  @Patch('admin/stories/:id/moderation')
-  @RequireRoles(Roles.ADMIN)
+  @ApiOperation({ summary: 'Duyệt / từ chối truyện (REJECTED bắt buộc có note)' })
+  @Patch('stories/:id/moderation')
   moderateStory(@Param('id') id: string, @Body() dto: ModerateStoryDto) {
-    return this.adminService.moderateStory(id, dto.moderation);
+    return this.adminService.moderateStory(id, dto.moderation, dto.note);
   }
 
-  @ApiOperation({ summary: 'Danh sách report (admin)' })
-  @ApiQuery({ name: 'status', required: false })
-  @Get('admin/reports')
-  @RequireRoles(Roles.ADMIN)
+  // ── Report Management ─────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: 'Danh sách report' })
+  @ApiQuery({ name: 'status', required: false, enum: ['OPEN', 'RESOLVED', 'DISMISSED'] })
+  @Get('reports')
   listReports(@Query('status') status?: string) {
     return this.adminService.listReports(status);
   }
 
-  @ApiOperation({ summary: 'Xử lý report (admin)' })
-  @Patch('admin/reports/:id')
-  @RequireRoles(Roles.ADMIN)
+  @ApiOperation({
+    summary:
+      'Xử lý report — action: HIDE_COMMENT | REJECT_STORY | BAN_USER (tuỳ chọn)',
+  })
+  @Patch('reports/:id')
   resolveReport(
     @Param('id') id: string,
     @Body() dto: ResolveReportDto,
