@@ -11,13 +11,12 @@ type Properties = {
 };
 
 function Tabs({ activeIndex, onChange, tabs }: Properties) {
-  const { borders, colors, gutters, layout } = useTheme();
+  const { borders, colors, layout } = useTheme();
 
   return (
     <View
       style={[
         layout.row,
-        gutters.gap_32,
         borders.wBottom_1,
         borders.outlineVariant,
       ]}
@@ -30,14 +29,20 @@ function Tabs({ activeIndex, onChange, tabs }: Properties) {
             onPress={() => {
               onChange(index);
             }}
-            style={{
-              borderBottomColor: active ? colors.primary : 'transparent',
-              borderBottomWidth: 2,
-              paddingBottom: 12,
-            }}
+            style={[
+              layout.flex_1,
+              layout.itemsCenter,
+              {
+                borderBottomColor: active ? colors.primary : 'transparent',
+                borderBottomWidth: 2,
+                paddingBottom: 12,
+                paddingTop: 12,
+              },
+            ]}
           >
             <AppText
               color={active ? 'primary' : 'onSurfaceVariant'}
+              style={{ textAlign: 'center' }}
               variant="labelMd"
             >
               {tab}
