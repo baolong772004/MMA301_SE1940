@@ -147,6 +147,11 @@ export class ChaptersService {
 
   /** Mở khóa chương VIP bằng xu (F6). */
   async unlock(id: string, user: AuthUser) {
+    if (!user.emailVerified) {
+      throw new ForbiddenException(
+        'Vui lòng xác thực email trước khi thực hiện giao dịch mở khóa.',
+      );
+    }
     const chapter = await this.prisma.chapter.findUnique({
       include: { story: { select: { authorId: true, title: true } } },
       where: { id },

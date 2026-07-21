@@ -60,13 +60,10 @@ export class JwtAuthGuard implements CanActivate {
       request.user = user;
       return true;
     } catch (error) {
-      if (isPublic) {
-        return true;
-      }
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Access token không hợp lệ');
+      throw new UnauthorizedException('Access token không hợp lệ hoặc đã hết hạn');
     }
   }
 

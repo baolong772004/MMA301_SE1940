@@ -13,6 +13,13 @@ import { Public } from '../common/decorators/public.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Chuỗi ngày đọc sách liên tiếp của tôi' })
+  @Get('me/streak')
+  getStreak(@CurrentUser() user: AuthUser) {
+    return this.usersService.getStreak(user);
+  }
+
   @ApiOperation({ summary: 'Hồ sơ công khai (followers/following/stories)' })
   @Get(':id')
   @Public()

@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ResendOtpDto, VerifyOtpDto } from './dto';
@@ -17,6 +18,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng ký tài khoản (gửi OTP)' })
   @Post('register')
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -25,6 +27,7 @@ export class AuthController {
   @HttpCode(200)
   @Post('verify-otp')
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto);
   }
@@ -33,6 +36,7 @@ export class AuthController {
   @HttpCode(200)
   @Post('resend-otp')
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   resendOtp(@Body() dto: ResendOtpDto) {
     return this.authService.resendOtp(dto.email);
   }
@@ -41,6 +45,7 @@ export class AuthController {
   @HttpCode(200)
   @Post('login')
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }

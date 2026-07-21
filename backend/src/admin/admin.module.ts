@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * AdminModule — quản lý toàn bộ nghiệp vụ admin-only.
@@ -9,6 +10,7 @@ import { AdminService } from './admin.service';
  */
 @Module({
   controllers: [AdminController],
+  imports: [NotificationsModule],
   providers: [AdminService],
 })
 export class AdminModule {}
