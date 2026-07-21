@@ -11,6 +11,8 @@ import { useTheme } from '@/theme';
 import { AssetByVariant } from '@/components/atoms';
 import { SafeScreen } from '@/components/templates';
 
+import { storage } from '@/services/storage';
+
 function Startup({ navigation }: RootScreenProps<Paths.Startup>) {
   const { fonts, gutters, layout } = useTheme();
   const { t } = useTranslation();
@@ -24,9 +26,20 @@ function Startup({ navigation }: RootScreenProps<Paths.Startup>) {
 
   useEffect(() => {
     if (isSuccess) {
+      const profileStr = storage.getString('user_profile');
+      let isAdmin = false;
+      if (profileStr) {
+        try {
+          const profile = JSON.parse(profileStr);
+          if (profile.role === 'ADMIN') {
+            isAdmin = true;
+          }
+        } catch {}
+      }
+
       navigation.reset({
         index: 0,
-        routes: [{ name: Paths.Main }],
+        routes: [{ name: isAdmin ? Paths.Admin : Paths.Main }],
       });
     }
   }, [isSuccess, navigation]);

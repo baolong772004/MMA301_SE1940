@@ -2,7 +2,8 @@ import { View } from 'react-native';
 
 import { useTheme } from '@/theme';
 
-import { AppIcon, AppText } from '@/components/atoms';
+import AppIcon from '../AppIcon/AppIcon';
+import AppText from '../AppText/AppText';
 
 type Properties = {
   readonly count?: number;

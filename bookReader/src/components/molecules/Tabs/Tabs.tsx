@@ -26,7 +26,7 @@ function Tabs({ activeIndex, onChange, tabs }: Properties) {
         const active = index === activeIndex;
         return (
           <Pressable
-            key={tab}
+            key={`${tab}-${index}`}
             onPress={() => {
               onChange(index);
             }}

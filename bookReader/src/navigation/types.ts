@@ -29,12 +29,14 @@ export type RootScreenProps<
 export type RootStackParamList = {
   [Paths.Example]: undefined;
   [Paths.Main]: NavigatorScreenParams<MainTabParamList>;
-  [Paths.Reader]: { storyId: string };
+  [Paths.Reader]: { chapterId?: string; storyId?: string };
   [Paths.Search]: undefined;
   [Paths.Settings]: undefined;
   [Paths.Startup]: undefined;
   [Paths.StoryDetail]: { storyId: string };
   [Paths.Streak]: undefined;
   [Paths.Login]: undefined;
+  [Paths.Register]: undefined;
+  [Paths.VerifyOtp]: { email: string; devOtp?: string };
   [Paths.Admin]: undefined;
 };

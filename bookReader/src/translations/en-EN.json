@@ -79,6 +79,8 @@
       "no_reviews": "No reviews yet",
       "rating_label": "Rating",
       "read_now": "Read Now",
+      "continue_reading": "Continue Reading",
+      "currently_reading": "You are currently reading",
       "reviews_tab": "Reviews",
       "see_all_chapters": "See all {{count}} chapters",
       "synopsis_title": "Synopsis",

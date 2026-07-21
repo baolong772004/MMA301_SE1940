@@ -12,21 +12,21 @@ import { useTheme } from '@/theme';
 import { AppIcon, AppText } from '@/components/atoms';
 import { ScreenContainer } from '@/components/templates';
 
-import { profileData } from '@/mocks/profile';
-
 function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
   const { backgrounds, borders, gutters, layout } = useTheme();
   const { t } = useTranslation();
 
-  // Days list based on profileData.streakHistory
+  const streakDaysCount = 5;
+  const streakHistory = [true, true, true, true, true, false, false];
+
   const days = [
-    { achieved: profileData.streakHistory[0], label: t('streak.day_1') },
-    { achieved: profileData.streakHistory[1], label: t('streak.day_2') },
-    { achieved: profileData.streakHistory[2], label: t('streak.day_3') },
-    { achieved: profileData.streakHistory[3], label: t('streak.day_4') },
-    { achieved: profileData.streakHistory[4], label: t('streak.day_5') },
-    { achieved: profileData.streakHistory[5], label: t('streak.day_6') },
-    { achieved: profileData.streakHistory[6], label: t('streak.day_7') },
+    { achieved: streakHistory[0], label: t('streak.day_1') },
+    { achieved: streakHistory[1], label: t('streak.day_2') },
+    { achieved: streakHistory[2], label: t('streak.day_3') },
+    { achieved: streakHistory[3], label: t('streak.day_4') },
+    { achieved: streakHistory[4], label: t('streak.day_5') },
+    { achieved: streakHistory[5], label: t('streak.day_6') },
+    { achieved: streakHistory[6], label: t('streak.day_7') },
   ];
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -73,10 +73,10 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
         
         <View style={[layout.itemsCenter, gutters.gap_4]}>
           <AppText color="tertiary" variant="display">
-            {profileData.streakDaysCount}
+            {streakDaysCount}
           </AppText>
           <AppText color="onSurface" style={{ textAlign: 'center' }} variant="headlineMd">
-            {t('streak.days_consecutive', { count: profileData.streakDaysCount })}
+            {t('streak.days_consecutive', { count: streakDaysCount })}
           </AppText>
         </View>
 

@@ -11,6 +11,8 @@ export const enum Paths {
   Startup = 'startup',
   Login = 'login',
   Admin = 'admin',
+  Register = 'register',
+  VerifyOtp = 'verify-otp',
   StoryDetail = 'story-detail',
   Streak = 'streak',
   Write = 'write',

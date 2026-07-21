@@ -10,13 +10,13 @@ import { useTheme } from '@/theme';
 import { AppText, AppIcon, Avatar } from '@/components/atoms';
 import { SettingRow } from '@/components/molecules';
 import { ScreenContainer } from '@/components/templates';
-
-import { profileData } from '@/mocks/profile';
+import { useUser } from '@/hooks';
 
 function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
   const { changeTheme, colors, variant, layout, gutters } = useTheme();
   const { t } = useTranslation();
   const { toggleLanguage } = useI18n();
+  const { user } = useUser();
 
   const cardStyle = [
     gutters.marginBottom_24,
@@ -90,13 +90,13 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
       <View style={gutters.marginTop_16}>
         {/* Account Info Card */}
         <View style={[layout.row, layout.itemsCenter, gutters.gap_24, cardStyle]}>
-          <Avatar size={64} uri={profileData.avatarUri} />
+          <Avatar size={64} uri={user?.photoURL ?? ''} />
           <View>
             <AppText color="onSurface" variant="headlineMd">
-              {profileData.name}
+              {user?.name ?? 'Người dùng'}
             </AppText>
             <AppText color="onSurfaceVariant" variant="labelSm">
-              Premium Member
+              Thành viên NovaTales
             </AppText>
           </View>
         </View>

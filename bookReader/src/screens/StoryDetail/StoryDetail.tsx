@@ -1,13 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
+import { UserServices } from '@/services/users';
+import { StoriesServices } from '@/services/stories';
+import { LibraryServices } from '@/services/library';
+import { AdminServices } from '@/services/admin';
+import { ReportServices } from '@/services/reports';
+import { parseApiError } from '@/services/auth';
+import { LocalNotificationServices } from '@/services/notifications/localNotificationService';
 
-import { AppText, Button, Cover, RatingStars, Tag } from '@/components/atoms';
+import { AppIcon, AppText, Button, Cover, RatingStars, Tag, Skeleton } from '@/components/atoms';
 import {
   AuthorBar,
   ChapterListItem,
@@ -17,22 +24,154 @@ import {
 } from '@/components/molecules';
 import { ScreenContainer } from '@/components/templates';
 
-import { chapters, featuredStory, recommendedStories } from '@/mocks/stories';
-
 function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) {
   const { storyId } = route.params;
   const { backgrounds, borders, colors, gutters, layout } = useTheme();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
   const [following, setFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
-  const story =
-    storyId === featuredStory.id
-      ? featuredStory
-      : recommendedStories.find((item) => item.id === storyId) ?? featuredStory;
-
   const mockDescription = t('story_detail.mock_description');
+
+  const { data: apiDetail, isLoading: isDetailLoading } = useQuery({
+    queryKey: ['story-detail', storyId],
+    queryFn: () => StoriesServices.getStoryDetail(storyId),
+    enabled: !!storyId,
+  });
+
+  const { data: readingProgress } = useQuery({
+    queryKey: ['story-progress', storyId],
+    queryFn: () => LibraryServices.getProgress(storyId),
+    enabled: !!storyId,
+  });
+
+  if (isDetailLoading || !apiDetail) {
+    return (
+      <ScreenContainer
+        onLeftPress={() => navigation.goBack()}
+        showBack
+        padded
+        title={t('story_detail.title')}
+      >
+        <View style={[layout.col, gutters.gap_24, layout.itemsCenter, gutters.paddingTop_24, layout.flex_1]}>
+          <Skeleton height={200} width={140} style={borders.rounded_12} loading />
+          <Skeleton height={24} width={200} loading />
+          <Skeleton height={16} width={120} loading />
+          <View style={[layout.row, gutters.gap_12, gutters.marginTop_16, { width: '100%' }]}>
+            <View style={{ flex: 1 }}>
+              <Skeleton height={48} style={borders.rounded_8} loading />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Skeleton height={48} style={borders.rounded_8} loading />
+            </View>
+          </View>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  const displayStory = {
+    id: apiDetail.id,
+    title: apiDetail.title,
+    coverUri: apiDetail.coverUri || '',
+    description: apiDetail.description || 'Chưa có tóm tắt.',
+    genres: apiDetail.genres ?? ['Fantasy'],
+    status: apiDetail.status ?? 'ongoing',
+    author: {
+      id: apiDetail.author?.id ?? '',
+      name: apiDetail.author?.name ?? 'Tác giả',
+      handle: apiDetail.author?.handle ?? '',
+      avatarUri: apiDetail.author?.avatarUri ?? undefined,
+    },
+    rating: apiDetail.rating ?? 0,
+    views: String(apiDetail.viewCount ?? 0),
+    chaptersList: apiDetail.chapters ?? [],
+  };
+
+  async function handleToggleFollow() {
+    if (!displayStory.author?.id) return;
+    try {
+      if (following) {
+        await UserServices.unfollowUser(displayStory.author.id);
+        setFollowing(false);
+      } else {
+        await UserServices.followUser(displayStory.author.id);
+        setFollowing(true);
+      }
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Theo dõi tác giả thất bại.');
+      Alert.alert('Thông báo', errorMsg);
+    }
+  }
+
+  async function handleAddToLibrary() {
+    if (!displayStory.id) return;
+    try {
+      await LibraryServices.setShelf(displayStory.id, 'SAVED');
+      Alert.alert('Thành công', 'Đã thêm truyện vào mục Yêu thích của Thư viện cá nhân! Hãy chuyển sang Tab thứ 2 (Yêu thích) ở Thư viện để xem.');
+      await queryClient.invalidateQueries({ queryKey: ['library'] });
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Thêm vào thư viện thất bại.');
+      Alert.alert('Lỗi', errorMsg);
+    }
+  }
+
+  async function handleReportStory(reason: string) {
+    if (!displayStory.id) return;
+    try {
+      await ReportServices.createReport({ storyId: displayStory.id, reason });
+      Alert.alert('Thành công', 'Báo cáo vi phạm đã được gửi lên hệ thống kiểm duyệt.');
+      LocalNotificationServices.addNotification(
+        `Cám ơn bạn! Báo cáo vi phạm về tác phẩm "${displayStory.title}" đã được gửi lên hệ thống. Đội ngũ kiểm duyệt sẽ xử lý trong vòng 24h.`,
+        'fire'
+      );
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Gửi báo cáo thất bại.');
+      Alert.alert('Lỗi', errorMsg);
+    }
+  }
+
+  function promptReportStory() {
+    Alert.alert(
+      'Báo cáo vi phạm',
+      'Chọn lý do báo cáo truyện này:',
+      [
+        { text: 'Nội dung bạo lực / nhạy cảm', onPress: () => handleReportStory('Nội dung bạo lực / nhạy cảm') },
+        { text: 'Vi phạm bản quyền', onPress: () => handleReportStory('Vi phạm bản quyền') },
+        { text: 'Spam / Lừa đảo', onPress: () => handleReportStory('Spam / Lừa đảo') },
+        { text: 'Hủy', style: 'cancel' },
+      ],
+    );
+  }
+
+  async function handleRateStory(stars: number) {
+    if (!displayStory.id) return;
+    try {
+      const res = await StoriesServices.rateStory(displayStory.id, stars);
+      Alert.alert('Thành công', `Cảm ơn bạn đã đánh giá ${stars} sao! (Điểm trung bình: ${res.rating}★)`);
+      await queryClient.invalidateQueries({ queryKey: ['story-detail', storyId] });
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Đánh giá truyện thất bại.');
+      Alert.alert('Lỗi', errorMsg);
+    }
+  }
+
+  function promptRating() {
+    Alert.alert(
+      'Đánh giá truyện',
+      'Bạn muốn đánh giá truyện này mấy sao?',
+      [
+        { text: '5 ★ (Rất hay)', onPress: () => handleRateStory(5) },
+        { text: '4 ★ (Hay)', onPress: () => handleRateStory(4) },
+        { text: '3 ★ (Bình thường)', onPress: () => handleRateStory(3) },
+        { text: '2 ★ (Tạm được)', onPress: () => handleRateStory(2) },
+        { text: '1 ★ (Dở)', onPress: () => handleRateStory(1) },
+        { text: 'Hủy', style: 'cancel' },
+      ],
+    );
+  }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const heroContainerStyle: any = [
@@ -96,6 +235,8 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
       onLeftPress={() => {
         navigation.goBack();
       }}
+      onRightPress={promptReportStory}
+      rightIcon="flag"
       padded={false}
       scroll={false}
       showBack
@@ -108,35 +249,35 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           style={layout.flex_1}
         >
           <View style={heroContainerStyle}>
-            <Cover uri={story.coverUri} width={120} />
+            <Cover uri={displayStory.coverUri} width={120} />
             <View style={genresStyle}>
-              {story.genres?.map((genre) => (
-                <Tag key={genre} label={genre} tone="secondary" />
+              {displayStory.genres?.map((genre, index) => (
+                <Tag key={`${genre}-${index}`} label={genre} tone="secondary" />
               ))}
-              {story.status ? (
+              {displayStory.status ? (
                 <Tag
-                  label={story.status === 'completed' ? 'Completed' : 'Ongoing'}
+                  label={displayStory.status === 'completed' ? 'Completed' : 'Ongoing'}
                   tone="primary"
                 />
               ) : undefined}
             </View>
             <AppText style={{ textAlign: 'center' }} variant="headlineLg">
-              {story.title}
+              {displayStory.title}
             </AppText>
             <AuthorBar
-              author={story.author}
+              author={displayStory.author}
               following={following}
-              onToggleFollow={() => {
-                setFollowing(!following);
-              }}
+              onToggleFollow={handleToggleFollow}
             />
           </View>
 
           <View style={statsContainerStyle}>
-            <StatItem
-              label={t('story_detail.rating_label')}
-              value={<RatingStars value={story.rating ?? 0} />}
-            />
+            <Pressable onPress={promptRating}>
+              <StatItem
+                label={t('story_detail.rating_label')}
+                value={<RatingStars value={displayStory.rating ?? 0} />}
+              />
+            </Pressable>
             <View
               style={{
                 borderColor: colors.outlineVariant,
@@ -144,7 +285,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
                 height: 32,
               }}
             />
-            <StatItem label={t('story_detail.views_label')} value={story.views ?? '0'} />
+            <StatItem label={t('story_detail.views_label')} value={displayStory.views ?? '0'} />
             <View
               style={{
                 borderColor: colors.outlineVariant,
@@ -152,13 +293,13 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
                 height: 32,
               }}
             />
-            <StatItem label={t('story_detail.chapters_label')} value={String(chapters.length)} />
+            <StatItem label={t('story_detail.chapters_label')} value={String(displayStory.chaptersList?.length ?? 0)} />
           </View>
 
           <View style={sectionStyle}>
             <SectionHeader title={t('story_detail.synopsis_title')} />
             <AppText color="onSurfaceVariant" variant="bodyLg">
-              {mockDescription}
+              {displayStory.description}
             </AppText>
           </View>
 
@@ -175,22 +316,21 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
 
           {activeTab === 0 ? (
             <View style={tabContentStyle}>
-              {chapters.slice(0, 3).map((chapter) => (
-                <ChapterListItem
-                  chapter={chapter}
-                  key={chapter.id}
-                  onPress={() => {
-                    navigation.navigate(Paths.Reader, { storyId: story.id });
-                  }}
-                />
-              ))}
-              <Button
-                label={t('story_detail.see_all_chapters', {
-                  count: chapters.length,
-                })}
-                onPress={() => {}}
-                variant="outlined"
-              />
+              {displayStory.chaptersList && displayStory.chaptersList.length > 0 ? (
+                displayStory.chaptersList.map((chapter: any) => (
+                  <ChapterListItem
+                    chapter={chapter}
+                    key={chapter.id}
+                    onPress={() => {
+                      navigation.navigate(Paths.Reader, { chapterId: chapter.id, storyId: displayStory.id });
+                    }}
+                  />
+                ))
+              ) : (
+                <AppText color="onSurfaceVariant" variant="bodyMd">
+                  Chưa có chương nào được tải lên.
+                </AppText>
+              )}
             </View>
           ) : (
             <View style={tabContentStyle}>
@@ -201,18 +341,40 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           )}
         </ScrollView>
 
-        <View style={ctaContainerStyle}>
-          <View style={layout.flex_1}>
-            <Button
-              label={t('story_detail.add_to_library')}
-              variant="outlined"
-            />
+        {readingProgress?.chapter ? (
+          <View style={[layout.itemsCenter, gutters.paddingVertical_8, { backgroundColor: colors.surfaceVariant, marginHorizontal: 24, borderRadius: 8, marginBottom: 8 }]}>
+            <AppText color="primary" variant="bodyMd" style={{ fontWeight: '600' }}>
+              📖 {t('story_detail.currently_reading')}: {readingProgress.chapter.title}
+            </AppText>
           </View>
+        ) : null}
+
+        <View style={ctaContainerStyle}>
+          <Pressable
+            onPress={handleAddToLibrary}
+            style={({ pressed }) => [
+              layout.justifyCenter,
+              layout.itemsCenter,
+              borders.rounded_12,
+              borders.w_1,
+              gutters.padding_8,
+              {
+                borderColor: colors.outlineVariant,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <AppIcon name="bookmark" color="primary" size={24} />
+            <AppText color="onSurfaceVariant" variant="labelSm">
+              Add Library
+            </AppText>
+          </Pressable>
           <View style={layout.flex_1}>
             <Button
               label={t('story_detail.read_now')}
               onPress={() => {
-                navigation.navigate(Paths.Reader, { storyId: story.id });
+                const targetChapterId = readingProgress?.chapterId ?? displayStory.chaptersList?.[0]?.id;
+                navigation.navigate(Paths.Reader, { chapterId: targetChapterId, storyId: displayStory.id });
               }}
               variant="filled"
             />
