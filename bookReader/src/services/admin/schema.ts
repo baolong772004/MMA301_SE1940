@@ -1,5 +1,4 @@
 import * as z from 'zod';
-import { storySchema } from '../stories/schema';
 
 export const adminStatsSchema = z.object({
   usersCount: z.number().catch(0),
@@ -11,6 +10,8 @@ export const adminStatsSchema = z.object({
   coinsToppedUp: z.number().catch(0),
   coinsSpentOnUnlocks: z.number().catch(0),
   unlockedCount: z.number().optional(),
+  activeUsers30d: z.number().optional(),
+  newUsersThisMonth: z.number().optional(),
 }).partial().passthrough();
 
 export type AdminStats = z.infer<typeof adminStatsSchema>;

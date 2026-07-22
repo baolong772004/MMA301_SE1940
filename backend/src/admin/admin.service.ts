@@ -161,7 +161,7 @@ export class AdminService {
       await this.notificationsService.createNotification(
         story.authorId,
         'Truyện bị từ chối duyệt',
-        `Truyện "${story.title}" của bạn đã bị từ chối duyệt. Lý do: ${note}`,
+        `Truyện "${story.title}" của bạn đã bị từ chối duyệt. Lý do: ${note?.trim() || 'Không có lý do được cung cấp'}`,
       );
     }
 

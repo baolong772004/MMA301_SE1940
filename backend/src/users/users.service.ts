@@ -17,6 +17,18 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async updateProfile(user: AuthUser, dto: { name?: string; avatarUri?: string; handle?: string }) {
+    const updated = await this.prisma.user.update({
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.handle && { handle: dto.handle }),
+        ...(dto.avatarUri !== undefined && { avatarUri: dto.avatarUri }),
+      },
+      where: { id: user.id },
+    });
+    return updated;
+  }
+
   async follow(targetId: string, user: AuthUser) {
     if (targetId === user.id) {
       throw new BadRequestException('Không thể tự theo dõi chính mình');
@@ -101,27 +113,18 @@ export class UsersService {
 
   async getStreak(user: AuthUser) {
     const userData = await this.prisma.user.findUniqueOrThrow({
-      select: { currentStreak: true, longestStreak: true, lastReadAt: true },
+      select: {
+        currentStreak: true,
+        longestStreak: true,
+        totalReadingDays: true,
+      },
       where: { id: user.id },
     });
-
-    const progresses = await this.prisma.readingProgress.findMany({
-      select: { updatedAt: true },
-      where: { userId: user.id },
-    });
-
-    const uniqueDates = new Set(
-      progresses.map((p) => p.updatedAt.toISOString().slice(0, 10)),
-    );
-
-    if (userData.lastReadAt) {
-      uniqueDates.add(userData.lastReadAt.toISOString().slice(0, 10));
-    }
 
     return {
       currentStreak: userData.currentStreak,
       longestStreak: userData.longestStreak,
-      totalReadingDays: uniqueDates.size,
+      totalReadingDays: userData.totalReadingDays,
     };
   }
 }

@@ -1,7 +1,15 @@
 import ky from 'ky';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { storage } from './storage';
+
+let Constants: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Constants = require('expo-constants');
+  if (Constants?.default) Constants = Constants.default;
+} catch {
+  // Safe fallback if expo-constants is missing
+}
 
 const getBaseUrl = () => {
   const envUrl = process.env.API_URL;

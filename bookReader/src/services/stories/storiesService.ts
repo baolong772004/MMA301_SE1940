@@ -22,7 +22,7 @@ export const StoriesServices = {
    * Chi tiết truyện + danh sách chương (GET /stories/:id)
    */
   getStoryDetail: async (id: string) => {
-    const response = await instance.get(`stories/${id}`).json();
+    const response = await instance.get(`stories/${id}`).json<any>();
     return response;
   },
 
@@ -30,7 +30,7 @@ export const StoriesServices = {
    * Truyện của tôi (Studio sáng tác) (GET /stories/mine)
    */
   getMyStories: async () => {
-    const response = await instance.get('stories/mine').json();
+    const response = await instance.get('stories/mine').json<any>();
     return response;
   },
 
@@ -52,7 +52,7 @@ export const StoriesServices = {
    * Đánh giá truyện 1-5 sao (PUT /stories/:id/rating)
    */
   rateStory: async (id: string, stars: number) => {
-    const response = await instance.put(`stories/${id}/rating`, { json: { stars } }).json();
+    const response = await instance.put(`stories/${id}/rating`, { json: { stars } }).json<any>();
     return response;
   },
 

@@ -41,14 +41,22 @@ function Search({ navigation }: RootScreenProps<Paths.Search>) {
   const { t } = useTranslation();
 
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedSort, setSelectedSort] = useState('Default');
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const sortValue = selectedSort === 'Rating' ? 'rating' : selectedSort === 'Views' ? 'views' : 'newest';
   const genreValue = selectedGenre !== 'All' ? selectedGenre : undefined;
   const statusValue = selectedStatus !== 'All' ? selectedStatus : undefined;
-  const qValue = query.trim() || undefined;
+  const qValue = debouncedQuery.trim() || undefined;
 
   const { data: apiResponse, isLoading: isApiLoading } = useQuery({
     queryKey: ['stories-search', qValue, genreValue, statusValue, sortValue],

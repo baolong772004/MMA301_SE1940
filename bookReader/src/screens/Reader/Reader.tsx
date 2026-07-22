@@ -83,7 +83,7 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
     if (!commentText.trim() || !activeChapterId) return;
     setPostingComment(true);
     try {
-      await ChaptersServices.createComment(activeChapterId, { content: commentText.trim() });
+      await ChaptersServices.createComment(activeChapterId, { content: commentText.trim(), paragraphIndex: 0 });
       setCommentText('');
       await queryClient.invalidateQueries({ queryKey: ['chapter-comments', activeChapterId] });
     } catch (err: unknown) {

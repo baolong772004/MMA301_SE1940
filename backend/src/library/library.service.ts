@@ -102,7 +102,7 @@ export class LibraryService {
 
     return this.prisma.$transaction(async (tx) => {
       const userData = await tx.user.findUniqueOrThrow({
-        select: { currentStreak: true, longestStreak: true, lastReadAt: true },
+        select: { currentStreak: true, longestStreak: true, lastReadAt: true, totalReadingDays: true },
         where: { id: user.id },
       });
 
@@ -139,6 +139,7 @@ export class LibraryService {
             currentStreak: newCurrentStreak,
             lastReadAt: now,
             longestStreak: newLongestStreak,
+            totalReadingDays: { increment: 1 }, // +1 ngày đọc mới
           },
           where: { id: user.id },
         });
