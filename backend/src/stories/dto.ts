@@ -113,4 +113,27 @@ export class RateStoryDto {
   @Min(1)
   @Type(() => Number)
   stars: number;
+
+  @ApiPropertyOptional({ description: 'Nội dung nhận xét (tùy chọn)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  content?: string;
+}
+
+export class RatingQueryDto {
+  @ApiPropertyOptional({ default: 1 })
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  @Type(() => Number)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ default: 20 })
+  @IsInt()
+  @IsOptional()
+  @Max(50)
+  @Min(1)
+  @Type(() => Number)
+  limit?: number = 20;
 }

@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
+import { useUser } from '@/hooks';
 import { UserServices } from '@/services/users';
 import { StoriesServices } from '@/services/stories';
 import { LibraryServices } from '@/services/library';
@@ -28,14 +29,28 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
   const { backgrounds, borders, colors, gutters, layout } = useTheme();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { user } = useUser();
 
   const [activeTab, setActiveTab] = useState(0);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [draftStars, setDraftStars] = useState(5);
+  const [draftContent, setDraftContent] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const { data: apiDetail, isLoading: isDetailLoading } = useQuery({
     queryKey: ['story-detail', storyId],
     queryFn: () => StoriesServices.getStoryDetail(storyId),
     enabled: !!storyId,
   });
+
+  const { data: storyRatings } = useQuery({
+    queryKey: ['story-ratings', storyId],
+    queryFn: () => StoriesServices.getStoryRatings(storyId),
+    enabled: !!storyId,
+  });
+
+  const reviews: any[] = Array.isArray(storyRatings?.items) ? storyRatings.items : [];
+  const myReview = reviews.find((review) => review.user?.id === user?.id);
 
   const authorId = apiDetail?.author?.id;
 
@@ -152,31 +167,29 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
     );
   }
 
-  async function handleRateStory(stars: number) {
-    if (!displayStory.id) return;
-    try {
-      const res = await StoriesServices.rateStory(displayStory.id, stars);
-      Alert.alert('Thành công', `Cảm ơn bạn đã đánh giá ${stars} sao! (Điểm trung bình: ${res.rating}★)`);
-      await queryClient.invalidateQueries({ queryKey: ['story-detail', storyId] });
-    } catch (err: unknown) {
-      const errorMsg = await parseApiError(err, 'Đánh giá truyện thất bại.');
-      Alert.alert('Lỗi', errorMsg);
-    }
+  function openReviewModal() {
+    setDraftStars(myReview?.stars ?? 5);
+    setDraftContent(myReview?.content ?? '');
+    setReviewModalVisible(true);
   }
 
-  function promptRating() {
-    Alert.alert(
-      'Đánh giá truyện',
-      'Bạn muốn đánh giá truyện này mấy sao?',
-      [
-        { text: '5 ★ (Rất hay)', onPress: () => handleRateStory(5) },
-        { text: '4 ★ (Hay)', onPress: () => handleRateStory(4) },
-        { text: '3 ★ (Bình thường)', onPress: () => handleRateStory(3) },
-        { text: '2 ★ (Tạm được)', onPress: () => handleRateStory(2) },
-        { text: '1 ★ (Dở)', onPress: () => handleRateStory(1) },
-        { text: 'Hủy', style: 'cancel' },
-      ],
-    );
+  async function handleSubmitReview() {
+    if (!displayStory.id) return;
+    setSubmittingReview(true);
+    try {
+      const res = await StoriesServices.rateStory(displayStory.id, draftStars, draftContent.trim());
+      setReviewModalVisible(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['story-detail', storyId] }),
+        queryClient.invalidateQueries({ queryKey: ['story-ratings', storyId] }),
+      ]);
+      Alert.alert('Thành công', `Cảm ơn bạn đã đánh giá ${draftStars} sao! (Điểm trung bình: ${res.rating}★)`);
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Gửi đánh giá thất bại.');
+      Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setSubmittingReview(false);
+    }
   }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -278,7 +291,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           </View>
 
           <View style={statsContainerStyle}>
-            <Pressable onPress={promptRating}>
+            <Pressable onPress={openReviewModal}>
               <StatItem
                 label={t('story_detail.rating_label')}
                 value={<RatingStars value={displayStory.rating ?? 0} />}
@@ -340,9 +353,41 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
             </View>
           ) : (
             <View style={tabContentStyle}>
-              <AppText color="onSurfaceVariant" variant="bodyMd">
-                {t('story_detail.no_reviews')}
-              </AppText>
+              <Button
+                label={myReview ? t('story_detail.edit_review') : t('story_detail.write_review')}
+                onPress={openReviewModal}
+                variant="outlined"
+              />
+              {reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <View
+                    key={review.id}
+                    style={[
+                      gutters.gap_4,
+                      gutters.padding_12,
+                      borders.rounded_12,
+                      borders.w_1,
+                      { borderColor: colors.outlineVariant },
+                    ]}
+                  >
+                    <View style={[layout.row, layout.itemsCenter, layout.justifyBetween]}>
+                      <AppText color="onSurface" variant="labelMd">
+                        {review.user?.name ?? 'Độc giả'}
+                      </AppText>
+                      <RatingStars value={review.stars ?? 0} />
+                    </View>
+                    {review.content ? (
+                      <AppText color="onSurfaceVariant" variant="bodyMd">
+                        {review.content}
+                      </AppText>
+                    ) : undefined}
+                  </View>
+                ))
+              ) : (
+                <AppText color="onSurfaceVariant" variant="bodyMd">
+                  {t('story_detail.no_reviews')}
+                </AppText>
+              )}
             </View>
           )}
         </ScrollView>
@@ -386,6 +431,78 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
             />
           </View>
         </View>
+
+        <Modal
+          animationType="slide"
+          onRequestClose={() => setReviewModalVisible(false)}
+          transparent
+          visible={reviewModalVisible}
+        >
+          <Pressable
+            onPress={() => setReviewModalVisible(false)}
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', flex: 1, justifyContent: 'flex-end' }}
+          >
+            <Pressable
+              onPress={() => {}}
+              style={[
+                backgrounds.surface,
+                gutters.padding_24,
+                gutters.gap_16,
+                { borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+              ]}
+            >
+              <View style={[layout.row, layout.itemsCenter, layout.justifyBetween]}>
+                <AppText color="onSurface" variant="headlineMd">
+                  {myReview ? t('story_detail.edit_review') : t('story_detail.write_review')}
+                </AppText>
+                <Pressable onPress={() => setReviewModalVisible(false)}>
+                  <AppText color="primary" variant="labelMd">
+                    {t('reader.close')}
+                  </AppText>
+                </Pressable>
+              </View>
+
+              <View style={[layout.row, layout.justifyCenter, gutters.gap_8]}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable hitSlop={8} key={star} onPress={() => setDraftStars(star)}>
+                    <AppIcon
+                      color={star <= draftStars ? 'tertiary' : 'onSurfaceVariant'}
+                      name="star"
+                      size={32}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+
+              <TextInput
+                multiline
+                numberOfLines={4}
+                onChangeText={setDraftContent}
+                placeholder={t('story_detail.review_placeholder')}
+                placeholderTextColor={colors.onSurfaceVariant}
+                style={[
+                  gutters.padding_12,
+                  borders.rounded_12,
+                  borders.w_1,
+                  {
+                    borderColor: colors.outlineVariant,
+                    color: colors.onSurface,
+                    minHeight: 96,
+                    textAlignVertical: 'top',
+                  },
+                ]}
+                value={draftContent}
+              />
+
+              <Button
+                disabled={submittingReview}
+                label={submittingReview ? '...' : t('story_detail.submit_review')}
+                onPress={handleSubmitReview}
+                variant="filled"
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </ScreenContainer>
   );

@@ -201,16 +201,17 @@ export class StoriesService {
     }));
   }
 
-  async rate(storyId: string, stars: number, user: AuthUser) {
+  async rate(storyId: string, stars: number, user: AuthUser, content?: string) {
     const story = await this.prisma.story.findUnique({
       where: { id: storyId },
     });
     if (!story || story.moderation !== Moderation.APPROVED) {
       throw new NotFoundException('Truyện không tồn tại');
     }
+    const trimmedContent = content?.trim();
     await this.prisma.rating.upsert({
-      create: { stars, storyId, userId: user.id },
-      update: { stars },
+      create: { content: trimmedContent || null, stars, storyId, userId: user.id },
+      update: { content: trimmedContent || null, stars },
       where: { userId_storyId: { storyId, userId: user.id } },
     });
     const agg = await this.prisma.rating.aggregate({
@@ -231,6 +232,37 @@ export class StoriesService {
       myRating: stars,
       rating: Math.round(updated.ratingAvg * 10) / 10,
       ratingCount: updated.ratingCount,
+    };
+  }
+
+  /** Danh sách đánh giá (sao + nhận xét) của một truyện, mới nhất trước. */
+  async listRatings(storyId: string, query: { limit?: number; page?: number }) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.rating.findMany({
+        include: { user: { select: AUTHOR_SELECT } },
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        where: { storyId },
+      }),
+      this.prisma.rating.count({ where: { storyId } }),
+    ]);
+
+    return {
+      items: items.map((r) => ({
+        content: r.content,
+        createdAt: r.createdAt,
+        id: r.id,
+        stars: r.stars,
+        updatedAt: r.updatedAt,
+        user: r.user,
+      })),
+      limit,
+      page,
+      total,
     };
   }
 

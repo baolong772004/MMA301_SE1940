@@ -57,10 +57,26 @@ export const StoriesServices = {
   },
 
   /**
-   * Đánh giá truyện 1-5 sao (PUT /stories/:id/rating)
+   * Đánh giá truyện 1-5 sao + nhận xét (thêm/sửa review của tôi) (PUT /stories/:id/rating)
    */
-  rateStory: async (id: string, stars: number) => {
-    const response = await instance.put(`stories/${id}/rating`, { json: { stars } }).json<any>();
+  rateStory: async (id: string, stars: number, content?: string) => {
+    const response = await instance
+      .put(`stories/${id}/rating`, { json: { content, stars } })
+      .json<any>();
+    return response;
+  },
+
+  /**
+   * Danh sách đánh giá (sao + nhận xét) của truyện (GET /stories/:id/ratings)
+   */
+  getStoryRatings: async (id: string, query?: { limit?: number; page?: number }) => {
+    const searchParams: Record<string, number> = {};
+    if (query?.page) searchParams.page = query.page;
+    if (query?.limit) searchParams.limit = query.limit;
+
+    const response = await instance
+      .get(`stories/${id}/ratings`, { searchParams })
+      .json<any>();
     return response;
   },
 
