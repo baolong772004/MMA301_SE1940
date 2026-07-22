@@ -46,9 +46,15 @@ export class ImportsService {
     if (!file) {
       throw new BadRequestException('Thiếu file để import');
     }
-    const ext = extname(file.originalname).toLowerCase();
+    let originalName = file.originalname;
+    try {
+      originalName = decodeURIComponent(file.originalname);
+    } catch {
+      // fallback to raw originalname
+    }
+    const ext = extname(originalName).toLowerCase();
     const fallbackTitle =
-      file.originalname.replace(/\.(epub|pdf)$/i, '').trim() ||
+      originalName.replace(/\.(epub|pdf)$/i, '').trim() ||
       'Sách chưa đặt tên';
 
     try {
@@ -144,12 +150,12 @@ export class ImportsService {
         coverUri,
         description: this.buildDescription(parsed.author, parsed.description),
         genres: JSON.stringify([]),
-        moderation: Moderation.APPROVED,
+        moderation: Moderation.PENDING,
         source: BookSource.EPUB,
         sourceFileUri: `${baseUrl}/uploads/imports/${file.filename}`,
-        status: 'completed',
+        status: 'ongoing',
         title: parsed.title.slice(0, 120),
-        visibility: Visibility.PRIVATE,
+        visibility: Visibility.PUBLIC,
       },
     });
     await this.createChapters(story.id, parsed.chapters);
@@ -170,13 +176,13 @@ export class ImportsService {
         authorId: user.id,
         description: this.buildDescription(parsed.author),
         genres: JSON.stringify([]),
-        moderation: Moderation.APPROVED,
+        moderation: Moderation.PENDING,
         pageCount: parsed.pageCount,
         source: BookSource.PDF,
         sourceFileUri: `${baseUrl}/uploads/imports/${file.filename}`,
-        status: 'completed',
+        status: 'ongoing',
         title: parsed.title.slice(0, 120),
-        visibility: Visibility.PRIVATE,
+        visibility: Visibility.PUBLIC,
       },
     });
     await this.createChapters(story.id, parsed.chapters);

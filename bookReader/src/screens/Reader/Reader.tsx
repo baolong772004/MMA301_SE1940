@@ -11,6 +11,8 @@ import { useTheme } from '@/theme';
 import { ChaptersServices } from '@/services/chapters';
 import { LibraryServices } from '@/services/library';
 import { parseApiError } from '@/services/auth';
+import { ReportServices } from '@/services/reports';
+import { LocalNotificationServices } from '@/services/notifications/localNotificationService';
 
 import { AppIcon, AppText, Button, ProgressBar } from '@/components/atoms';
 import { ScreenContainer } from '@/components/templates';
@@ -91,6 +93,42 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
       Alert.alert('Thông báo', errorMsg);
     } finally {
       setPostingComment(false);
+    }
+  }
+
+  async function handleReportComment(commentId: string, commenterName: string) {
+    Alert.alert(
+      'Báo cáo bình luận',
+      `Chọn lý do báo cáo bình luận của ${commenterName}:`,
+      [
+        {
+          text: 'Nội dung phản cảm / bạo lực',
+          onPress: () => submitCommentReport(commentId, commenterName, 'Nội dung phản cảm / bạo lực'),
+        },
+        {
+          text: 'Spam / Quảng cáo',
+          onPress: () => submitCommentReport(commentId, commenterName, 'Spam / Quảng cáo'),
+        },
+        {
+          text: 'Quấy rối / Công kích',
+          onPress: () => submitCommentReport(commentId, commenterName, 'Quấy rối / Công kích'),
+        },
+        { text: 'Hủy', style: 'cancel' },
+      ],
+    );
+  }
+
+  async function submitCommentReport(commentId: string, commenterName: string, reason: string) {
+    try {
+      await ReportServices.createReport({ commentId, reason });
+      Alert.alert('Thành công', 'Báo cáo vi phạm bình luận đã được gửi lên hệ thống kiểm duyệt.');
+      LocalNotificationServices.addNotification(
+        `Cám ơn bạn! Báo cáo vi phạm về bình luận của "${commenterName}" đã được gửi lên hệ thống. Đội ngũ kiểm duyệt sẽ xử lý trong vòng 24h.`,
+        'fire'
+      );
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Gửi báo cáo thất bại.');
+      Alert.alert('Lỗi', errorMsg);
     }
   }
 
@@ -237,31 +275,32 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
                 </AppText>
 
                 {/* Inline Comment Section */}
-                <View style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: colors.outlineVariant, paddingTop: 20 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <AppText color="onSurface" variant="headlineMd">
-                      Bình luận ({commentsList?.length ?? 0})
-                    </AppText>
-                    <Button label="Xem tất cả" onPress={() => setCommentsVisible(true)} variant="outlined" />
+                {controlsVisible && (
+                  <View style={{ marginTop: 40, borderTopWidth: 1, borderTopColor: colors.outlineVariant, paddingTop: 20 }}>
+                    <Pressable
+                      onPress={() => setCommentsVisible(true)}
+                      style={({ pressed }) => [
+                        layout.row,
+                        layout.itemsCenter,
+                        layout.justifyCenter,
+                        gutters.gap_8,
+                        borders.rounded_12,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          paddingVertical: 12,
+                          paddingHorizontal: 24,
+                          width: '100%',
+                          opacity: pressed ? 0.8 : 1,
+                        }
+                      ]}
+                    >
+                      <AppIcon name="chat" color="primary" size={20} />
+                      <AppText color="primary" variant="labelMd" style={{ fontWeight: '600' }}>
+                        Xem bình luận ({commentsList?.length ?? 0})
+                      </AppText>
+                    </Pressable>
                   </View>
-
-                  {Array.isArray(commentsList) && commentsList.length > 0 ? (
-                    commentsList.slice(0, 3).map((cmt: any) => (
-                      <View key={cmt.id} style={{ backgroundColor: colors.surfaceVariant, borderRadius: 12, padding: 12, marginBottom: 10 }}>
-                        <AppText color="primary" variant="labelMd" style={{ marginBottom: 4 }}>
-                          {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle}` : ''}
-                        </AppText>
-                        <AppText color="onSurface" variant="bodyMd">
-                          {cmt.content}
-                        </AppText>
-                      </View>
-                    ))
-                  ) : (
-                    <AppText color="onSurfaceVariant" variant="bodyMd" style={{ fontStyle: 'italic' }}>
-                      Chưa có bình luận nào. Hãy là người đầu tiên để lại ý kiến!
-                    </AppText>
-                  )}
-                </View>
+                )}
               </View>
             )}
           </ScrollView>
@@ -460,8 +499,14 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
           transparent
           visible={commentsVisible}
         >
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+            onPress={() => setCommentsVisible(false)}
+          >
+            <Pressable
+              style={{ backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}
+              onPress={() => {}}
+            >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <AppText color="onSurface" variant="headlineMd">
                   Bình luận ({commentsList?.length ?? 0})
@@ -475,9 +520,18 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
                 {Array.isArray(commentsList) && commentsList.length > 0 ? (
                   commentsList.map((cmt: any) => (
                     <View key={cmt.id} style={{ backgroundColor: '#F4F4F6', borderRadius: 12, padding: 12, marginBottom: 10 }}>
-                      <AppText color="primary" variant="labelMd" style={{ marginBottom: 4 }}>
-                        {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle}` : ''}
-                      </AppText>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <AppText color="primary" variant="labelMd">
+                          {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle}` : ''}
+                        </AppText>
+                        <Pressable
+                          hitSlop={8}
+                          onPress={() => handleReportComment(cmt.id, cmt.user?.name ?? 'Độc giả')}
+                          style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                        >
+                          <AppIcon name="flag" color="onSurfaceVariant" size={16} />
+                        </Pressable>
+                      </View>
                       <AppText color="onSurface" variant="bodyMd">
                         {cmt.content}
                       </AppText>
@@ -510,8 +564,8 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
                   disabled={postingComment || !commentText.trim()}
                 />
               </View>
-            </View>
-          </View>
+            </Pressable>
+          </Pressable>
         </Modal>
       </View>
     </ScreenContainer>

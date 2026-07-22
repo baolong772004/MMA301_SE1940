@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { useTheme } from '@/theme';
 
@@ -14,37 +14,39 @@ function Tabs({ activeIndex, onChange, tabs }: Properties) {
   const { borders, colors, gutters, layout } = useTheme();
 
   return (
-    <View
-      style={[
-        layout.row,
-        gutters.gap_32,
-        borders.wBottom_1,
-        borders.outlineVariant,
-      ]}
-    >
-      {tabs.map((tab, index) => {
-        const active = index === activeIndex;
-        return (
-          <Pressable
-            key={`${tab}-${index}`}
-            onPress={() => {
-              onChange(index);
-            }}
-            style={{
-              borderBottomColor: active ? colors.primary : 'transparent',
-              borderBottomWidth: 2,
-              paddingBottom: 12,
-            }}
-          >
-            <AppText
-              color={active ? 'primary' : 'onSurfaceVariant'}
-              variant="labelMd"
+    <View style={[borders.wBottom_1, borders.outlineVariant]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[
+          layout.row,
+          gutters.gap_32,
+        ]}
+      >
+        {tabs.map((tab, index) => {
+          const active = index === activeIndex;
+          return (
+            <Pressable
+              key={`${tab}-${index}`}
+              onPress={() => {
+                onChange(index);
+              }}
+              style={{
+                borderBottomColor: active ? colors.primary : 'transparent',
+                borderBottomWidth: 2,
+                paddingBottom: 12,
+              }}
             >
-              {tab}
-            </AppText>
-          </Pressable>
-        );
-      })}
+              <AppText
+                color={active ? 'primary' : 'onSurfaceVariant'}
+                variant="labelMd"
+              >
+                {tab}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }

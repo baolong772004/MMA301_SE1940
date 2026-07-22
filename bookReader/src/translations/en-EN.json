@@ -59,6 +59,8 @@
       "days": "{{count}} Days",
       "days_consecutive": "{{count}} Days Reading Streak!",
       "subtitle": "Read every day to keep your streak alive!",
+      "longest_streak": "Longest Streak",
+      "total_days": "Total Days",
       "day_1": "M",
       "day_2": "T",
       "day_3": "W",
@@ -72,7 +74,7 @@
       "no_results": "No results found."
     },
     "story_detail": {
-      "add_to_library": "Add to Library",
+      "add_to_library": "Add Library",
       "chapters_label": "Chapters",
       "chapters_tab": "Chapters",
       "mock_description": "A thrilling adventure in a mystical world where ancient secrets unfold through the hero's steps...",

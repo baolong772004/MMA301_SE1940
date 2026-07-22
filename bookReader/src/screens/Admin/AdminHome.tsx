@@ -48,18 +48,25 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
   const [rejectStoryId, setRejectStoryId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
 
-  async function handleModerate(storyId: string, moderation: 'APPROVED' | 'REJECTED') {
-    if (moderation === 'REJECTED') {
-      setRejectStoryId(storyId);
-      setRejectNote('');
-      setRejectModalVisible(true);
+  async function handleModerate(storyId: string, moderation: 'APPROVED' | 'REJECTED', note?: string) {
+    if (moderation === 'REJECTED' && !note) {
+      Alert.alert(
+        'Lý do từ chối',
+        'Vui lòng chọn lý do từ chối duyệt bộ truyện này:',
+        [
+          { text: 'Nội dung không phù hợp', onPress: () => handleModerate(storyId, 'REJECTED', 'Nội dung không phù hợp') },
+          { text: 'Ảnh bìa vi phạm', onPress: () => handleModerate(storyId, 'REJECTED', 'Ảnh bìa vi phạm') },
+          { text: 'Vi phạm bản quyền', onPress: () => handleModerate(storyId, 'REJECTED', 'Vi phạm bản quyền') },
+          { text: 'Hủy', style: 'cancel' },
+        ],
+      );
       return;
     }
 
     setLoadingStoryId(storyId);
     try {
       await AdminServices.moderateStory(storyId, moderation);
-      Alert.alert('Thành công', 'Đã duyệt bộ truyện!');
+      Alert.alert('Thành công', moderation === 'APPROVED' ? 'Đã duyệt bộ truyện!' : 'Đã từ chối bộ truyện!');
       await queryClient.invalidateQueries({ queryKey: ['admin-stories'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
     } catch (err: unknown) {
@@ -71,21 +78,21 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
   }
 
   async function submitRejection() {
-    const trimmedNote = rejectNote.trim();
-    if (!trimmedNote) {
-      Alert.alert('Lỗi', 'Vui lòng nhập lý do từ chối.');
+    if (!rejectStoryId) return;
+    if (!rejectNote.trim()) {
+      Alert.alert('Thông báo', 'Vui lòng nhập lý do từ chối');
       return;
     }
-    if (!rejectStoryId) return;
+
     setLoadingStoryId(rejectStoryId);
     try {
-      await AdminServices.moderateStory(rejectStoryId, 'REJECTED', trimmedNote);
-      Alert.alert('Thành công', 'Đã từ chối bộ truyện!');
+      await AdminServices.moderateStory(rejectStoryId, 'REJECTED', rejectNote.trim());
+      Alert.alert('Thành công', 'Đã từ chối duyệt bộ truyện!');
       setRejectModalVisible(false);
       await queryClient.invalidateQueries({ queryKey: ['admin-stories'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
     } catch (err: unknown) {
-      const errorMsg = await parseApiError(err, 'Thao tác từ chối thất bại.');
+      const errorMsg = await parseApiError(err, 'Thao tác kiểm duyệt thất bại.');
       Alert.alert('Lỗi', errorMsg);
     } finally {
       setLoadingStoryId(null);
@@ -257,7 +264,11 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
                           <Button
                             label="Từ chối"
                             variant="outlined"
-                            onPress={() => handleModerate(story.id, 'REJECTED')}
+                            onPress={() => {
+                              setRejectStoryId(story.id);
+                              setRejectNote('');
+                              setRejectModalVisible(true);
+                            }}
                             disabled={loadingStoryId === story.id}
                             fullWidth
                           />

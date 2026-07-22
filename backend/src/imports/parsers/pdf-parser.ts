@@ -96,11 +96,21 @@ export async function parsePdf(
     }
 
     const meta = (info.info ?? {}) as Record<string, unknown>;
-    const title = (meta.Title as string) || fallbackTitle;
+    const rawTitle = (meta.Title as string) || fallbackTitle;
     const authorRaw = meta.Author as string | undefined;
 
+    let title = rawTitle;
+    try {
+      title = decodeURIComponent(rawTitle);
+    } catch {}
+
+    let author = authorRaw;
+    try {
+      if (authorRaw) author = decodeURIComponent(authorRaw);
+    } catch {}
+
     return {
-      author: authorRaw?.trim() || undefined,
+      author: author?.trim() || undefined,
       chapters,
       pageCount: pages.length,
       title: title.trim() || fallbackTitle,

@@ -35,6 +35,14 @@ export const StoriesServices = {
   },
 
   /**
+   * Thống kê truyện (chỉ tác giả) (GET /stories/:id/stats)
+   */
+  getStoryStats: async (id: string) => {
+    const response = await instance.get(`stories/${id}/stats`).json<any>();
+    return response;
+  },
+
+  /**
    * Tạo truyện mới (POST /stories)
    */
   createStory: async (data: {

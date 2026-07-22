@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { useTheme } from '@/theme';
 
@@ -11,6 +11,7 @@ type Properties = {
   readonly message: string;
   readonly time: string;
   readonly unread: boolean;
+  readonly onPress?: () => void;
 };
 
 function NotificationItem({
@@ -19,6 +20,7 @@ function NotificationItem({
   message,
   time,
   unread,
+  onPress = undefined,
 }: Properties) {
   const { backgrounds, borders, colors, gutters, layout } = useTheme();
 
@@ -47,7 +49,7 @@ function NotificationItem({
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   return (
-    <View style={containerStyle}>
+    <Pressable style={containerStyle} onPress={onPress} disabled={!onPress}>
       {avatarUri ? (
         <Avatar size={48} uri={avatarUri} />
       ) : (
@@ -64,7 +66,7 @@ function NotificationItem({
         </AppText>
       </View>
       {unread ? <View style={unreadDotStyle} /> : undefined}
-    </View>
+    </Pressable>
   );
 }
 

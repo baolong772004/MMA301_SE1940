@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
@@ -105,9 +105,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
       } else {
         await UserServices.followUser(displayStory.author.id);
       }
-      // Invalidate cache tác giả và cache cá nhân để số following/followers và trạng thái nút bấm cập nhật tức thì
       await queryClient.invalidateQueries({ queryKey: ['author-profile', displayStory.author.id] });
-      await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     } catch (err: unknown) {
       const errorMsg = await parseApiError(err, 'Theo dõi tác giả thất bại.');
       Alert.alert('Thông báo', errorMsg);
@@ -374,7 +372,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           >
             <AppIcon name="bookmark" color="primary" size={24} />
             <AppText color="onSurfaceVariant" variant="labelSm">
-              Add Library
+              {t('story_detail.add_to_library')}
             </AppText>
           </Pressable>
           <View style={layout.flex_1}>

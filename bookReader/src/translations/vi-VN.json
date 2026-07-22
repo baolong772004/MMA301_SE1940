@@ -59,6 +59,8 @@
       "days": "{{count}} Ngày",
       "days_consecutive": "{{count}} Ngày Streak Liên Tiếp!",
       "subtitle": "Hãy đọc sách mỗi ngày để giữ vững chuỗi Streak của bạn nhé!",
+      "longest_streak": "Kỷ lục chuỗi",
+      "total_days": "Tổng ngày đọc",
       "day_1": "T2",
       "day_2": "T3",
       "day_3": "T4",
@@ -72,7 +74,7 @@
       "no_results": "Không tìm thấy kết quả phù hợp."
     },
     "story_detail": {
-      "add_to_library": "Thêm vào thư viện",
+      "add_to_library": "Thêm thư viện",
       "chapters_tab": "Danh sách chương",
       "no_reviews": "Chưa có đánh giá",
       "read_now": "Đọc Ngay",

@@ -43,6 +43,16 @@ function Alerts() {
     }
   }
 
+  async function handleMarkRead(id: string) {
+    try {
+      await NotificationServices.markAsRead(id);
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    } catch (err: unknown) {
+      const msg = await parseApiError(err, 'Thao tác thất bại.');
+      Alert.alert('Lỗi', msg);
+    }
+  }
+
   // Tách nhóm: chưa đọc / đã đọc
   const unreadNotifications = notifications.filter((n) => !n.read);
   const readNotifications = notifications.filter((n) => n.read);
@@ -83,6 +93,7 @@ function Alerts() {
                     message={`${item.title}: ${item.body}`}
                     time={formatTime(item.createdAt)}
                     unread={!item.read}
+                    onPress={() => handleMarkRead(item.id)}
                   />
                 ))
               ) : (
