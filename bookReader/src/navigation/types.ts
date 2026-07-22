@@ -35,6 +35,7 @@ export type RootStackParamList = {
   [Paths.Startup]: undefined;
   [Paths.StoryDetail]: { storyId: string };
   [Paths.Streak]: undefined;
+  [Paths.UserProfile]: { userId: string };
   [Paths.Login]: undefined;
   [Paths.Register]: undefined;
   [Paths.VerifyOtp]: { email: string; devOtp?: string };

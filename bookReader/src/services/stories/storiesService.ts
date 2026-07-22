@@ -1,5 +1,5 @@
 import { instance } from '@/services/instance';
-import { storyListResponseSchema, StoryListResponse, StoryQuery } from './schema';
+import { reviewSchema, Review, storyListResponseSchema, StoryListResponse, StoryQuery } from './schema';
 
 export const StoriesServices = {
   /**
@@ -62,6 +62,21 @@ export const StoriesServices = {
   rateStory: async (id: string, stars: number) => {
     const response = await instance.put(`stories/${id}/rating`, { json: { stars } }).json<any>();
     return response;
+  },
+
+  /**
+   * Danh sách bài đánh giá có nội dung của truyện (GET /stories/:id/reviews)
+   */
+  getReviews: async (id: string): Promise<Review[]> => {
+    const response = await instance.get(`stories/${id}/reviews`).json();
+    return reviewSchema.array().parse(response);
+  },
+
+  /**
+   * Thêm hoặc cập nhật bài đánh giá của người dùng hiện tại (PUT /stories/:id/review)
+   */
+  saveReview: async (id: string, data: { content: string; stars: number }) => {
+    return instance.put(`stories/${id}/review`, { json: data }).json();
   },
 
   /**

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { CreateReportDto } from './dto';
 import type { AuthUser } from '../common/decorators/current-user.decorator';
@@ -14,15 +14,34 @@ export class ReportsService {
    * Phải cung cấp storyId hoặc commentId — không thể để cả hai trống.
    */
   async createReport(dto: CreateReportDto, user: AuthUser) {
-    if (!dto.storyId && !dto.commentId) {
-      throw new BadRequestException('Cần storyId hoặc commentId');
+    if (!dto.reason.trim()) {
+      throw new BadRequestException('Lý do báo cáo không được để trống');
     }
+    if (Boolean(dto.storyId) === Boolean(dto.commentId)) {
+      throw new BadRequestException(
+        'Cần cung cấp đúng một đối tượng báo cáo: storyId hoặc commentId',
+      );
+    }
+
+    const target = dto.storyId
+      ? await this.prisma.story.findUnique({
+          select: { id: true },
+          where: { id: dto.storyId },
+        })
+      : await this.prisma.comment.findUnique({
+          select: { id: true },
+          where: { id: dto.commentId! },
+        });
+    if (!target) {
+      throw new NotFoundException('Nội dung cần báo cáo không tồn tại');
+    }
+
     return this.prisma.report.create({
       data: {
         commentId: dto.commentId,
-        reason:    dto.reason,
+        reason: dto.reason.trim(),
         reporterId: user.id,
-        storyId:   dto.storyId,
+        storyId: dto.storyId,
       },
     });
   }

@@ -15,6 +15,7 @@ import {
   CreateChapterDto,
   CreateStoryDto,
   RateStoryDto,
+  SaveReviewDto,
   StoryQueryDto,
   UpdateStoryDto,
 } from './dto';
@@ -49,6 +50,13 @@ export class StoriesController {
   @Public()
   detail(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
     return this.storiesService.detail(id, user);
+  }
+
+  @ApiOperation({ summary: 'Danh sách bài đánh giá có nội dung của truyện' })
+  @Get(':id/reviews')
+  @Public()
+  reviews(@Param('id') id: string) {
+    return this.storiesService.listReviews(id);
   }
 
   @ApiBearerAuth()
@@ -103,5 +111,16 @@ export class StoriesController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.storiesService.rate(id, dto.stars, user);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Thêm hoặc cập nhật bài đánh giá truyện' })
+  @Put(':id/review')
+  saveReview(
+    @Param('id') id: string,
+    @Body() dto: SaveReviewDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.storiesService.saveReview(id, dto, user);
   }
 }

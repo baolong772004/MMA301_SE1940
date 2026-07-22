@@ -41,6 +41,17 @@ export const storyQuerySchema = z.object({
   status: z.enum(['ongoing', 'completed']).optional(),
 });
 
+export const reviewSchema = z.object({
+  content: z.string(),
+  createdAt: z.string(),
+  id: z.string(),
+  stars: z.number().min(1).max(5),
+  updatedAt: z.string(),
+  user: storyAuthorSchema,
+  userId: z.string(),
+});
+
+export type Review = z.infer<typeof reviewSchema>;
 export type Story = z.infer<typeof storySchema>;
 export type StoryListResponse = z.infer<typeof storyListResponseSchema>;
 export type StoryQuery = z.infer<typeof storyQuerySchema>;

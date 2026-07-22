@@ -3,7 +3,7 @@ import type { Story } from '@/models';
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Dimensions, FlatList, Pressable, View } from 'react-native';
+import { Alert, Dimensions, FlatList, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Paths } from '@/navigation/paths';

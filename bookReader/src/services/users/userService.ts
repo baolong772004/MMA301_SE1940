@@ -1,4 +1,5 @@
 import { instance } from '@/services/instance';
+import { storySchema, type Story } from '@/services/stories/schema';
 import { userProfileSchema, UserProfile } from './schema';
 
 export const UserServices = {
@@ -13,9 +14,9 @@ export const UserServices = {
   /**
    * Lấy danh sách truyện công khai của tác giả theo ID (GET /users/:id/stories)
    */
-  getAuthorStories: async (id: string) => {
+  getAuthorStories: async (id: string): Promise<Story[]> => {
     const response = await instance.get(`users/${id}/stories`).json();
-    return response;
+    return storySchema.array().parse(response);
   },
 
   /**

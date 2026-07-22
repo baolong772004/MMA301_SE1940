@@ -1,18 +1,14 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-import { useI18n, useUser } from '@/hooks';
+import { useI18n } from '@/hooks';
 import { useTheme } from '@/theme';
 
 import { AssetByVariant, IconByVariant, Skeleton } from '@/components/atoms';
 import { SafeScreen } from '@/components/templates';
 
-const MAX_RANDOM_ID = 9;
-
 function Example() {
   const { t } = useTranslation();
-  const { useFetchOneQuery } = useUser();
   const { toggleLanguage } = useI18n();
 
   const {
@@ -26,33 +22,12 @@ function Example() {
     variant,
   } = useTheme();
 
-  const [currentId, setCurrentId] = useState(-1);
-
-  const fetchOneUserQuery = useFetchOneQuery(currentId);
-
-  useEffect(() => {
-    if (fetchOneUserQuery.isSuccess) {
-      Alert.alert(
-        t('screen_example.hello_user', { name: fetchOneUserQuery.data.name }),
-      );
-    }
-  }, [fetchOneUserQuery.isSuccess, fetchOneUserQuery.data, t]);
-
   const onChangeTheme = () => {
     changeTheme(variant === 'default' ? 'dark' : 'default');
   };
 
-  const handleResetError = () => {
-    void fetchOneUserQuery.refetch();
-  };
-
   return (
-    <SafeScreen
-      isError={fetchOneUserQuery.isError}
-      onResetError={() => {
-        handleResetError();
-      }}
-    >
+    <SafeScreen>
       <ScrollView>
         <View
           style={[
@@ -96,13 +71,13 @@ function Example() {
           >
             <Skeleton
               height={64}
-              loading={fetchOneUserQuery.isLoading}
+              loading={false}
               style={{ borderRadius: components.buttonCircle.borderRadius }}
               width={64}
             >
               <TouchableOpacity
                 onPress={() => {
-                  setCurrentId(Math.ceil(Math.random() * MAX_RANDOM_ID + 1));
+                  Alert.alert(t('screen_example.title'));
                 }}
                 style={[components.buttonCircle, gutters.marginBottom_16]}
                 testID="fetch-user-button"

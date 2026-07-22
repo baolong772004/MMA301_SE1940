@@ -114,3 +114,10 @@ export class RateStoryDto {
   @Type(() => Number)
   stars: number;
 }
+
+export class SaveReviewDto extends RateStoryDto {
+  @IsString()
+  @MaxLength(1000)
+  @MinLength(1)
+  content: string;
+}
