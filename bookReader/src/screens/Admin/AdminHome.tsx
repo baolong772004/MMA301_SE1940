@@ -1,7 +1,7 @@
 import type { RootScreenProps } from '@/navigation/types';
 
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Paths } from '@/navigation/paths';
@@ -9,14 +9,13 @@ import { useTheme } from '@/theme';
 import { useUser } from '@/hooks';
 import { AdminServices } from '@/services/admin';
 import { parseApiError } from '@/services/auth';
-import { storage } from '@/services/storage';
 
 import { SafeScreen } from '@/components/templates';
 import { AppText, Button, Cover, Tag } from '@/components/atoms';
 import { StatCard, Tabs } from '@/components/molecules';
 
 function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
-  const { layout, gutters, colors, borders } = useTheme();
+  const { layout, gutters } = useTheme();
   const queryClient = useQueryClient();
   const { clearUser } = useUser();
   
@@ -45,11 +44,22 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
     queryFn: () => AdminServices.getUsers(),
   });
 
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectStoryId, setRejectStoryId] = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+
   async function handleModerate(storyId: string, moderation: 'APPROVED' | 'REJECTED') {
+    if (moderation === 'REJECTED') {
+      setRejectStoryId(storyId);
+      setRejectNote('');
+      setRejectModalVisible(true);
+      return;
+    }
+
     setLoadingStoryId(storyId);
     try {
       await AdminServices.moderateStory(storyId, moderation);
-      Alert.alert('Thành công', moderation === 'APPROVED' ? 'Đã duyệt bộ truyện!' : 'Đã từ chối bộ truyện!');
+      Alert.alert('Thành công', 'Đã duyệt bộ truyện!');
       await queryClient.invalidateQueries({ queryKey: ['admin-stories'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
     } catch (err: unknown) {
@@ -60,7 +70,29 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
     }
   }
 
-  async function handleResolveReport(reportId: string, status: 'RESOLVED' | 'DISMISSED', action?: 'HIDE_COMMENT' | 'KEEP_COMMENT') {
+  async function submitRejection() {
+    const trimmedNote = rejectNote.trim();
+    if (!trimmedNote) {
+      Alert.alert('Lỗi', 'Vui lòng nhập lý do từ chối.');
+      return;
+    }
+    if (!rejectStoryId) return;
+    setLoadingStoryId(rejectStoryId);
+    try {
+      await AdminServices.moderateStory(rejectStoryId, 'REJECTED', trimmedNote);
+      Alert.alert('Thành công', 'Đã từ chối bộ truyện!');
+      setRejectModalVisible(false);
+      await queryClient.invalidateQueries({ queryKey: ['admin-stories'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Thao tác từ chối thất bại.');
+      Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setLoadingStoryId(null);
+    }
+  }
+
+  async function handleResolveReport(reportId: string, status: 'RESOLVED' | 'DISMISSED', action?: 'HIDE_COMMENT' | 'REJECT_STORY' | 'BAN_USER') {
     setLoadingReportId(reportId);
     try {
       await AdminServices.resolveReport(reportId, { status, action });
@@ -163,6 +195,15 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
               </View>
             </View>
 
+            <View style={[layout.row, gutters.gap_12] as any}>
+              <View style={{ flex: 1 }}>
+                <StatCard icon="trending_up" label="Active (30 ngày)" value={String(stats?.activeUsers30d ?? 0)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <StatCard icon="person_add" label="User mới (tháng)" value={String(stats?.newUsersThisMonth ?? 0)} />
+              </View>
+            </View>
+
             {/* Stories Moderation List */}
             <View style={{ marginTop: 12 }}>
               <AppText variant="headlineMd" style={{ marginBottom: 16 }}>
@@ -196,7 +237,7 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                           <Tag
                             label={story.moderation === 'APPROVED' ? 'Đã duyệt' : story.moderation === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt'}
-                            tone={story.moderation === 'APPROVED' ? 'primary' : story.moderation === 'REJECTED' ? 'error' : 'secondary'}
+                            tone={story.moderation === 'APPROVED' ? 'primary' : story.moderation === 'REJECTED' ? 'tertiary' : 'secondary'}
                           />
                         </View>
                       </View>
@@ -362,7 +403,7 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
                     </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <Tag label={usr.role} tone="primary" />
-                      <Tag label={usr.status} tone={usr.status === 'ACTIVE' ? 'primary' : 'error'} />
+                      <Tag label={usr.status} tone={usr.status === 'ACTIVE' ? 'primary' : 'tertiary'} />
                     </View>
                   </View>
 
@@ -397,6 +438,44 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
           </View>
         )}
       </ScrollView>
+
+      {/* Modal Từ chối truyện */}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={rejectModalVisible}
+        onRequestClose={() => setRejectModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ width: '100%', maxWidth: 360, backgroundColor: 'white', borderRadius: 20, padding: 24, gap: 16 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <AppText color="onSurface" variant="headlineMd">Lý do từ chối truyện</AppText>
+              <Pressable onPress={() => setRejectModalVisible(false)}>
+                <AppText color="primary" variant="labelMd">Đóng</AppText>
+              </Pressable>
+            </View>
+
+            <AppText color="onSurfaceVariant" variant="labelSm">Vui lòng nhập lý do từ chối bộ truyện này (bắt buộc):</AppText>
+            <TextInput
+              value={rejectNote}
+              onChangeText={setRejectNote}
+              placeholder="Ví dụ: Vi phạm bản quyền, nội dung không phù hợp..."
+              multiline
+              numberOfLines={4}
+              style={{ borderWidth: 1, borderColor: '#D4D4D8', borderRadius: 10, padding: 12, fontSize: 14, height: 100, textAlignVertical: 'top' }}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Button label="Hủy" variant="outlined" onPress={() => setRejectModalVisible(false)} fullWidth />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button label="Từ chối" onPress={submitRejection} disabled={loadingStoryId === rejectStoryId} fullWidth />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeScreen>
   );
 }

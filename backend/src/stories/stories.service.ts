@@ -19,6 +19,7 @@ import {
   ChapterStatus,
   Moderation,
   Roles,
+  TransactionType,
   Visibility,
 } from '../common/constants';
 import {
@@ -136,10 +137,25 @@ export class StoriesService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
+    const qRaw = query.q?.trim();
+    const qLower = qRaw?.toLowerCase();
+    const qCap = qRaw ? qRaw.charAt(0).toUpperCase() + qRaw.slice(1) : undefined;
+    const qUpper = qRaw?.toUpperCase();
+
+    // Tập hợp các biến thể viết hoa/thường để hỗ trợ tìm kiếm tác giả trên SQLite
+    const terms = Array.from(new Set([qRaw, qLower, qCap, qUpper].filter(Boolean))) as string[];
+
+    const searchConditions = terms.length > 0 ? terms.flatMap((term) => [
+      { title: { contains: term } },
+      { description: { contains: term } },
+      { author: { name: { contains: term } } },
+      { author: { handle: { contains: term } } },
+    ]) : undefined;
+
     const where = {
       moderation: Moderation.APPROVED,
       visibility: Visibility.PUBLIC,
-      ...(query.q && { title: { contains: query.q } }),
+      ...(searchConditions && { OR: searchConditions }),
       ...(query.genre && { genres: { contains: `"${query.genre}"` } }),
       ...(query.status && { status: query.status }),
     };
@@ -242,6 +258,69 @@ export class StoriesService {
       where: { id },
     });
     return toStoryResponse(story);
+  }
+
+  /**
+   * Thống kê chi tiết truyện cho tác giả (MF-1 — F4 PRD).
+   * Bao gồm: views, rating, số unlock và comment từng chương, tổng doanh thu xu.
+   */
+  async authorStats(storyId: string, user: AuthUser) {
+    await this.assertOwner(storyId, user);
+
+    const story = await this.prisma.story.findUniqueOrThrow({
+      select: { ratingAvg: true, ratingCount: true, title: true, viewCount: true },
+      where: { id: storyId },
+    });
+
+    const chapters = await this.prisma.chapter.findMany({
+      orderBy: { index: 'asc' },
+      select: {
+        _count: { select: { comments: true, unlocks: true } },
+        coinPrice: true,
+        id: true,
+        index: true,
+        isVip: true,
+        status: true,
+        title: true,
+        wordCount: true,
+      },
+      where: { storyId },
+    });
+
+    // Tổng doanh thu xu từ việc bán chương VIP (UNLOCK transactions)
+    const vipChapterIds = chapters
+      .filter((c) => c.isVip)
+      .map((c) => c.id);
+
+    const revenueAgg = vipChapterIds.length
+      ? await this.prisma.transaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            chapterId: { in: vipChapterIds },
+            type: TransactionType.UNLOCK,
+          },
+        })
+      : { _sum: { amount: 0 } };
+
+    return {
+      chapters: chapters.map((c) => ({
+        coinPrice: c.coinPrice,
+        commentCount: c._count.comments,
+        id: c.id,
+        index: c.index,
+        isVip: c.isVip,
+        status: c.status,
+        title: c.title,
+        unlockCount: c._count.unlocks,
+        wordCount: c.wordCount,
+      })),
+      rating: Math.round(story.ratingAvg * 10) / 10,
+      ratingCount: story.ratingCount,
+      // amount là số âm (xu trừ khỏi người đọc), lấy abs để hiển thị doanh thu
+      totalRevenueCoin: Math.abs(revenueAgg._sum.amount ?? 0),
+      title: story.title,
+      viewCount: story.viewCount,
+    };
   }
 
   private async assertOwner(storyId: string, user: AuthUser) {

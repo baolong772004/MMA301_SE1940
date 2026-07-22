@@ -1,5 +1,5 @@
- 
- import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Alert, Switch, View, Pressable } from 'react-native';
 
 import { useI18n } from '@/hooks/language/useI18n';
@@ -11,6 +11,8 @@ import { AppText, AppIcon, Avatar } from '@/components/atoms';
 import { SettingRow } from '@/components/molecules';
 import { ScreenContainer } from '@/components/templates';
 import { useUser } from '@/hooks';
+import { AuthServices } from '@/services/auth';
+import { storage } from '@/services/storage';
 
 function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
   const { changeTheme, colors, variant, layout, gutters } = useTheme();
@@ -78,6 +80,46 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
     gutters.paddingHorizontal_24,
   ];
 
+  function handleReadingPreferences() {
+    Alert.alert(
+      'Cấu hình đọc sách mặc định',
+      'Chọn kích thước chữ mặc định khi mở trình đọc:',
+      [
+        { text: 'Cỡ vừa (18px)', onPress: () => { storage.set('reader_font_size', '18'); Alert.alert('Đã lưu', 'Cỡ chữ mặc định: 18px'); } },
+        { text: 'Cỡ lớn (22px)', onPress: () => { storage.set('reader_font_size', '22'); Alert.alert('Đã lưu', 'Cỡ chữ mặc định: 22px'); } },
+        { text: 'Cỡ rất lớn (26px)', onPress: () => { storage.set('reader_font_size', '26'); Alert.alert('Đã lưu', 'Cỡ chữ mặc định: 26px'); } },
+        { text: 'Hủy', style: 'cancel' },
+      ],
+    );
+  }
+
+  function handleNotifications() {
+    (navigation as any).navigate(Paths.Main, { screen: Paths.Alerts });
+  }
+
+  const { data: meData } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: () => AuthServices.getMe(),
+  });
+
+  const displayRole = meData?.role === 'ADMIN' ? 'Quản trị viên (ADMIN)' : meData?.role === 'WRITER' ? 'Tác giả (WRITER)' : 'Độc giả (READER)';
+
+  function handleSecurity() {
+    Alert.alert(
+      'Bảo mật tài khoản',
+      `Tài khoản: ${meData?.name ?? user?.name ?? 'Chưa rõ'}\nVai trò: ${displayRole}\nTrạng thái: Hoạt động ✅`,
+      [{ text: 'Đóng' }],
+    );
+  }
+
+  function handlePrivacy() {
+    Alert.alert(
+      'Chính sách quyền riêng tư',
+      'NovaTales bảo mật tuyệt đối dữ liệu lịch sử đọc sách và thông tin tài khoản của bạn theo tiêu chuẩn mã hóa dữ liệu.',
+      [{ text: 'Đã hiểu' }],
+    );
+  }
+
   return (
     <ScreenContainer
       onLeftPress={() => {
@@ -90,13 +132,13 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
       <View style={gutters.marginTop_16}>
         {/* Account Info Card */}
         <View style={[layout.row, layout.itemsCenter, gutters.gap_24, cardStyle]}>
-          <Avatar size={64} uri={user?.photoURL ?? ''} />
+          <Avatar size={64} uri={meData?.avatarUri ?? user?.photoURL ?? ''} />
           <View>
             <AppText color="onSurface" variant="headlineMd">
-              {user?.name ?? 'Người dùng'}
+              {meData?.name ?? user?.name ?? 'Người dùng'}
             </AppText>
             <AppText color="onSurfaceVariant" variant="labelSm">
-              Thành viên NovaTales
+              {displayRole} • NovaTales
             </AppText>
           </View>
         </View>
@@ -142,7 +184,7 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
             <SettingRow
               iconName="font_download"
               label="Reading Preferences"
-              onPress={() => {}}
+              onPress={handleReadingPreferences}
               noBorder
             />
           </View>
@@ -159,7 +201,7 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
             <SettingRow
               iconName="notifications"
               label="Notifications"
-              onPress={() => {}}
+              onPress={handleNotifications}
               noBorder
             />
           </View>
@@ -176,12 +218,12 @@ function Settings({ navigation }: RootScreenProps<Paths.Settings>) {
             <SettingRow
               iconName="security"
               label="Security"
-              onPress={() => {}}
+              onPress={handleSecurity}
             />
             <SettingRow
               iconName="policy"
               label="Quyền riêng tư"
-              onPress={() => {}}
+              onPress={handlePrivacy}
               noBorder
             />
           </View>

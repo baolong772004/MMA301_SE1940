@@ -23,9 +23,10 @@ model User {
   status        String   @default("ACTIVE") // ACTIVE | BANNED
   emailVerified Boolean  @default(false)
   coinBalance   Int      @default(0)
-  currentStreak Int      @default(0)
-  longestStreak Int      @default(0)
-  lastReadAt    DateTime?
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  totalReadingDays Int      @default(0)
+  lastReadAt      DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

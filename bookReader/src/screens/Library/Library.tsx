@@ -91,6 +91,9 @@ function Library({ navigation }: MainTabScreenProps<Paths.Library>) {
       padded
       scroll={false}
       title={t('library.title')}
+      onRightPress={() => {
+        navigation.navigate(Paths.Search);
+      }}
     >
       <View style={[layout.flex_1, gutters.gap_24]}>
         <Tabs
@@ -116,8 +119,8 @@ function Library({ navigation }: MainTabScreenProps<Paths.Library>) {
           numColumns={activeTab === 0 ? 1 : numberColumns}
           columnWrapperStyle={activeTab === 0 ? undefined : [layout.justifyStart, gutters.gap_12]}
           contentContainerStyle={[gutters.gap_24, gutters.paddingBottom_24]}
-          data={activeTab === 0 ? (isFetchingContinue ? loadingData : continueData) : (isFetchingLibrary ? loadingData : stories)}
-          keyExtractor={(item, index) => item.id ?? item.story?.id ?? String(index)}
+          data={(activeTab === 0 ? (isFetchingContinue ? loadingData : continueData) : (isFetchingLibrary ? loadingData : stories)) as any[]}
+          keyExtractor={(item: any, index) => item.id ?? item.story?.id ?? String(index)}
           ListEmptyComponent={
             (activeTab === 0 ? isFetchingContinue : isFetchingLibrary) ? undefined : (
               <View
@@ -136,7 +139,7 @@ function Library({ navigation }: MainTabScreenProps<Paths.Library>) {
               </View>
             )
           }
-          renderItem={({ item, index }) => {
+          renderItem={({ item, index }: { item: any; index: number }) => {
             if (activeTab === 0) {
               if (isFetchingContinue) {
                 return (
@@ -157,12 +160,12 @@ function Library({ navigation }: MainTabScreenProps<Paths.Library>) {
                       title: item.story?.title ?? 'Truyện',
                     },
                     lastReadChapter: item.chapter ? item.chapter.title : 'Đang đọc dở',
-                    progress: item.position ?? 0.5,
+                    progress: item.position ?? item.lastReadPosition ?? 0.5,
                   } as any}
                   onPress={() => {
                     navigation.navigate(Paths.Reader, {
-                      chapterId: item.chapter?.id,
-                      storyId: item.story?.id,
+                      chapterId: item.chapter?.id ?? item.lastReadChapterId,
+                      storyId: item.story?.id ?? item.storyId,
                     });
                   }}
                 />
@@ -187,7 +190,9 @@ function Library({ navigation }: MainTabScreenProps<Paths.Library>) {
             return (
               <StoryCard
                 onPress={() => {
-                  navigation.navigate(Paths.StoryDetail, { storyId: item.id });
+                  if (item.id) {
+                    navigation.navigate(Paths.StoryDetail, { storyId: item.id });
+                  }
                 }}
                 onLongPress={handleRemoveFromLibrary}
                 story={item as any}

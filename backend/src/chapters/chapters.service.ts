@@ -93,7 +93,7 @@ export class ChaptersService {
       data: {
         chapterId,
         content: censor(dto.content.trim()),
-        paragraphIndex: dto.paragraphIndex,
+        paragraphIndex: dto.paragraphIndex ?? 0,
         userId: user.id,
       },
       include: {

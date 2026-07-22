@@ -38,9 +38,10 @@ export const AdminServices = {
 
   /**
    * Duyệt / từ chối truyện (admin) (PATCH /admin/stories/:id/moderation)
+   * note: Bắt buộc khi moderation === 'REJECTED'
    */
-  moderateStory: async (id: string, moderation: 'APPROVED' | 'REJECTED') => {
-    const response = await instance.patch(`admin/stories/${id}/moderation`, { json: { moderation } }).json();
+  moderateStory: async (id: string, moderation: 'APPROVED' | 'REJECTED', note?: string) => {
+    const response = await instance.patch(`admin/stories/${id}/moderation`, { json: { moderation, note } }).json();
     return response;
   },
 

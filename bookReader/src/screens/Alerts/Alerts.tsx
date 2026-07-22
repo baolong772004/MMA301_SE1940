@@ -1,101 +1,126 @@
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, Alert } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useTheme } from '@/theme';
 import { NotificationItem, SectionHeader } from '@/components/molecules';
 import { ScreenContainer } from '@/components/templates';
-import { LocalNotificationServices, LocalNotification } from '@/services/notifications/localNotificationService';
+import { AppText } from '@/components/atoms';
+import { NotificationServices, ApiNotification } from '@/services/notifications/notificationService';
+import { parseApiError } from '@/services/auth';
 
 function Alerts() {
-  const { gutters, layout } = useTheme();
+  const { gutters, layout, colors } = useTheme();
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
 
-  const [notifications, setNotifications] = useState<LocalNotification[]>([]);
+  const { data: notifications = [], isLoading } = useQuery<ApiNotification[]>({
+    queryKey: ['notifications'],
+    queryFn: () => NotificationServices.getNotifications(),
+    // Làm mới mỗi khi màn hình focus
+    refetchOnWindowFocus: true,
+  });
 
-  // Tải lại danh sách thông báo khi màn hình được active/focus
-  useEffect(() => {
+  // Làm mới khi focus vào tab
+  useCallback(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      setNotifications(LocalNotificationServices.getNotifications());
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
-    // Lần đầu render
-    setNotifications(LocalNotificationServices.getNotifications());
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, queryClient]);
 
-  function handleMarkAllRead() {
-    const updated = LocalNotificationServices.markAllAsRead();
-    setNotifications(updated);
-    Alert.alert('Thông báo', 'Đã đánh dấu đọc tất cả thông báo!');
+  async function handleMarkAllRead() {
+    try {
+      await NotificationServices.markAllAsRead();
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      Alert.alert('Thông báo', 'Đã đánh dấu đọc tất cả thông báo!');
+    } catch (err: unknown) {
+      const msg = await parseApiError(err, 'Thao tác thất bại.');
+      Alert.alert('Lỗi', msg);
+    }
   }
 
-  // Tách nhóm thông báo mới chưa đọc và thông báo cũ đã đọc
-  const todayNotifications = notifications.filter((n) => n.unread);
-  const earlierNotifications = notifications.filter((n) => !n.unread);
+  // Tách nhóm: chưa đọc / đã đọc
+  const unreadNotifications = notifications.filter((n) => !n.read);
+  const readNotifications = notifications.filter((n) => n.read);
+
+  // Định dạng thời gian tương đối
+  function formatTime(createdAt: string): string {
+    const diffMs = Date.now() - new Date(createdAt).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays > 0) return `${diffDays} ngày trước`;
+    if (diffHours > 0) return `${diffHours} giờ trước`;
+    if (diffMins > 0) return `${diffMins} phút trước`;
+    return 'Vừa xong';
+  }
 
   return (
     <ScreenContainer
       scroll
       title={t('alerts.title')}
-      rightIcon="theme" // Dùng icon theme có sẵn để biểu thị nút cài đặt/hành động
+      rightIcon="theme"
       onRightPress={handleMarkAllRead}
     >
-      {/* Today Section (Chưa đọc) */}
-      <View style={[layout.col, gutters.gap_16]}>
-        <SectionHeader title={t('alerts.today') + ` (${todayNotifications.length})`} />
-        <View style={layout.col}>
-          {todayNotifications.length > 0 ? (
-            todayNotifications.map((item) => (
-              <NotificationItem
-                avatarUri={item.avatarUri}
-                iconName={item.iconName}
-                key={item.id}
-                message={item.message}
-                time={item.time}
-                unread={item.unread}
-              />
-            ))
-          ) : (
-            <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-              <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontStyle: 'italic' }}>
-                Không có thông báo mới.
-              </AppText>
-            </View>
-          )}
+      {isLoading ? (
+        <View style={[layout.itemsCenter, gutters.padding_24]}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      </View>
+      ) : (
+        <>
+          {/* Chưa đọc */}
+          <View style={[layout.col, gutters.gap_16]}>
+            <SectionHeader title={`${t('alerts.today')} (${unreadNotifications.length})`} />
+            <View style={layout.col}>
+              {unreadNotifications.length > 0 ? (
+                unreadNotifications.map((item) => (
+                  <NotificationItem
+                    key={item.id}
+                    message={`${item.title}: ${item.body}`}
+                    time={formatTime(item.createdAt)}
+                    unread={!item.read}
+                  />
+                ))
+              ) : (
+                <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontStyle: 'italic' }}>
+                    Không có thông báo mới.
+                  </AppText>
+                </View>
+              )}
+            </View>
+          </View>
 
-      {/* Earlier Section (Đã đọc) */}
-      <View style={[layout.col, gutters.gap_16, gutters.marginTop_24]}>
-        <SectionHeader title={t('alerts.earlier')} />
-        <View style={layout.col}>
-          {earlierNotifications.length > 0 ? (
-            earlierNotifications.map((item) => (
-              <NotificationItem
-                avatarUri={item.avatarUri}
-                iconName={item.iconName}
-                key={item.id}
-                message={item.message}
-                time={item.time}
-                unread={item.unread}
-              />
-            ))
-          ) : (
-            <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-              <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontStyle: 'italic' }}>
-                Không có thông báo cũ.
-              </AppText>
+          {/* Đã đọc */}
+          <View style={[layout.col, gutters.gap_16, gutters.marginTop_24]}>
+            <SectionHeader title={t('alerts.earlier')} />
+            <View style={layout.col}>
+              {readNotifications.length > 0 ? (
+                readNotifications.map((item) => (
+                  <NotificationItem
+                    key={item.id}
+                    message={`${item.title}: ${item.body}`}
+                    time={formatTime(item.createdAt)}
+                    unread={false}
+                  />
+                ))
+              ) : (
+                <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontStyle: 'italic' }}>
+                    Không có thông báo cũ.
+                  </AppText>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-      </View>
+          </View>
+        </>
+      )}
     </ScreenContainer>
   );
 }
-
-// Bổ sung import AppText bị thiếu
-import { AppText } from '@/components/atoms';
 
 export default Alerts;
