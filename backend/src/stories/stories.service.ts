@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import type {
   CreateChapterDto,
   CreateStoryDto,
+  SaveReviewDto,
   StoryQueryDto,
   UpdateStoryDto,
 } from './dto';
@@ -27,6 +28,7 @@ import {
   toStoryResponse,
 } from '../common/utils/story-mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { censor } from '../common/utils/censor';
 
 export const CHAPTER_META_SELECT = {
   autoSavedAt: true,
@@ -122,15 +124,35 @@ export class StoriesService {
       .update({ data: { viewCount: { increment: 1 } }, where: { id } })
       .catch(() => undefined);
 
-    let myRating: null | number = null;
+    let myReview: null | { content: null | string; stars: number } = null;
     if (user) {
       const rating = await this.prisma.rating.findUnique({
         where: { userId_storyId: { storyId: id, userId: user.id } },
       });
-      myRating = rating?.stars ?? null;
+      myReview = rating
+        ? { content: rating.content, stars: rating.stars }
+        : null;
     }
 
-    return { ...toStoryResponse(story), chapters, myRating };
+    return {
+      ...toStoryResponse(story),
+      chapters,
+      myRating: myReview?.stars ?? null,
+      myReview,
+    };
+  }
+
+  async listReviews(storyId: string) {
+    await this.assertPublicStory(storyId);
+    return this.prisma.rating.findMany({
+      include: {
+        user: {
+          select: { avatarUri: true, handle: true, id: true, name: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      where: { content: { not: null }, storyId },
+    });
   }
 
   async list(query: StoryQueryDto, user?: AuthUser) {
@@ -201,17 +223,11 @@ export class StoriesService {
     }));
   }
 
-  async rate(storyId: string, stars: number, user: AuthUser, content?: string) {
-    const story = await this.prisma.story.findUnique({
-      where: { id: storyId },
-    });
-    if (!story || story.moderation !== Moderation.APPROVED) {
-      throw new NotFoundException('Truyện không tồn tại');
-    }
-    const trimmedContent = content?.trim();
+  async rate(storyId: string, stars: number, user: AuthUser) {
+    await this.assertPublicStory(storyId);
     await this.prisma.rating.upsert({
-      create: { content: trimmedContent || null, stars, storyId, userId: user.id },
-      update: { content: trimmedContent || null, stars },
+      create: { stars, storyId, userId: user.id },
+      update: { stars },
       where: { userId_storyId: { storyId, userId: user.id } },
     });
     const agg = await this.prisma.rating.aggregate({
@@ -235,35 +251,30 @@ export class StoriesService {
     };
   }
 
-  /** Danh sách đánh giá (sao + nhận xét) của một truyện, mới nhất trước. */
-  async listRatings(storyId: string, query: { limit?: number; page?: number }) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+  async saveReview(storyId: string, dto: SaveReviewDto, user: AuthUser) {
+    await this.assertPublicStory(storyId);
+    await this.prisma.rating.upsert({
+      create: {
+        content: censor(dto.content.trim()),
+        stars: dto.stars,
+        storyId,
+        userId: user.id,
+      },
+      update: { content: censor(dto.content.trim()), stars: dto.stars },
+      where: { userId_storyId: { storyId, userId: user.id } },
+    });
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.rating.findMany({
-        include: { user: { select: AUTHOR_SELECT } },
-        orderBy: { updatedAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        where: { storyId },
-      }),
-      this.prisma.rating.count({ where: { storyId } }),
-    ]);
+    const aggregate = await this.refreshRatingAggregate(storyId);
+    const review = await this.prisma.rating.findUniqueOrThrow({
+      include: {
+        user: {
+          select: { avatarUri: true, handle: true, id: true, name: true },
+        },
+      },
+      where: { userId_storyId: { storyId, userId: user.id } },
+    });
 
-    return {
-      items: items.map((r) => ({
-        content: r.content,
-        createdAt: r.createdAt,
-        id: r.id,
-        stars: r.stars,
-        updatedAt: r.updatedAt,
-        user: r.user,
-      })),
-      limit,
-      page,
-      total,
-    };
+    return { ...review, ...aggregate, myRating: dto.stars };
   }
 
   async remove(id: string, user: AuthUser) {
@@ -366,6 +377,42 @@ export class StoriesService {
       throw new ForbiddenException('Bạn không phải tác giả truyện này');
     }
     return story;
+  }
+
+  private async assertPublicStory(storyId: string) {
+    const story = await this.prisma.story.findUnique({
+      select: { moderation: true, visibility: true },
+      where: { id: storyId },
+    });
+    if (
+      !story ||
+      story.moderation !== Moderation.APPROVED ||
+      story.visibility !== Visibility.PUBLIC
+    ) {
+      throw new NotFoundException('Truyện không tồn tại');
+    }
+    return story;
+  }
+
+  private async refreshRatingAggregate(storyId: string) {
+    const aggregate = await this.prisma.rating.aggregate({
+      _avg: { stars: true },
+      _count: true,
+      _sum: { stars: true },
+      where: { storyId },
+    });
+    const story = await this.prisma.story.update({
+      data: {
+        ratingAvg: aggregate._avg.stars ?? 0,
+        ratingCount: aggregate._count,
+        ratingSum: aggregate._sum.stars ?? 0,
+      },
+      where: { id: storyId },
+    });
+    return {
+      rating: Math.round(story.ratingAvg * 10) / 10,
+      ratingCount: story.ratingCount,
+    };
   }
 
   /** Xóa file gốc/bìa đã upload khi xóa sách import (best-effort, không chặn response). */

@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { useUser } from '@/hooks';
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
-import { useUser } from '@/hooks';
 import { UserServices } from '@/services/users';
 import { StoriesServices } from '@/services/stories';
 import { LibraryServices } from '@/services/library';
@@ -14,10 +14,11 @@ import { ReportServices } from '@/services/reports';
 import { parseApiError } from '@/services/auth';
 import { LocalNotificationServices } from '@/services/notifications/localNotificationService';
 
-import { AppIcon, AppText, Button, Cover, RatingStars, Tag, Skeleton } from '@/components/atoms';
+import { AppIcon, AppText, Avatar, Button, Cover, RatingStars, Tag, Skeleton } from '@/components/atoms';
 import {
   AuthorBar,
   ChapterListItem,
+  ReportDialog,
   SectionHeader,
   StatItem,
   Tabs,
@@ -28,29 +29,22 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
   const { storyId } = route.params;
   const { backgrounds, borders, colors, gutters, layout } = useTheme();
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const { user } = useUser();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState(0);
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
-  const [draftStars, setDraftStars] = useState(5);
-  const [draftContent, setDraftContent] = useState('');
-  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [reviewContent, setReviewContent] = useState('');
+  const [reviewStars, setReviewStars] = useState(5);
+  const [reviewVisible, setReviewVisible] = useState(false);
+  const [savingReview, setSavingReview] = useState(false);
 
   const { data: apiDetail, isLoading: isDetailLoading } = useQuery({
     queryKey: ['story-detail', storyId],
     queryFn: () => StoriesServices.getStoryDetail(storyId),
     enabled: !!storyId,
   });
-
-  const { data: storyRatings } = useQuery({
-    queryKey: ['story-ratings', storyId],
-    queryFn: () => StoriesServices.getStoryRatings(storyId),
-    enabled: !!storyId,
-  });
-
-  const reviews: any[] = Array.isArray(storyRatings?.items) ? storyRatings.items : [];
-  const myReview = reviews.find((review) => review.user?.id === user?.id);
 
   const authorId = apiDetail?.author?.id;
 
@@ -62,6 +56,12 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
   });
 
   const isFollowing = authorProfile?.isFollowing ?? false;
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ['story-reviews', storyId],
+    queryFn: () => StoriesServices.getReviews(storyId),
+    enabled: activeTab === 1,
+  });
 
   const { data: readingProgress } = useQuery({
     queryKey: ['story-progress', storyId],
@@ -120,7 +120,10 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
       } else {
         await UserServices.followUser(displayStory.author.id);
       }
-      await queryClient.invalidateQueries({ queryKey: ['author-profile', displayStory.author.id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['author-profile', displayStory.author.id] }),
+        queryClient.invalidateQueries({ queryKey: ['user-profile', displayStory.author.id] }),
+      ]);
     } catch (err: unknown) {
       const errorMsg = await parseApiError(err, 'Theo dõi tác giả thất bại.');
       Alert.alert('Thông báo', errorMsg);
@@ -141,8 +144,10 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
 
   async function handleReportStory(reason: string) {
     if (!displayStory.id) return;
+    setReporting(true);
     try {
       await ReportServices.createReport({ storyId: displayStory.id, reason });
+      setReportVisible(false);
       Alert.alert('Thành công', 'Báo cáo vi phạm đã được gửi lên hệ thống kiểm duyệt.');
       LocalNotificationServices.addNotification(
         `Cám ơn bạn! Báo cáo vi phạm về tác phẩm "${displayStory.title}" đã được gửi lên hệ thống. Đội ngũ kiểm duyệt sẽ xử lý trong vòng 24h.`,
@@ -151,44 +156,42 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
     } catch (err: unknown) {
       const errorMsg = await parseApiError(err, 'Gửi báo cáo thất bại.');
       Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setReporting(false);
     }
   }
 
-  function promptReportStory() {
-    Alert.alert(
-      'Báo cáo vi phạm',
-      'Chọn lý do báo cáo truyện này:',
-      [
-        { text: 'Nội dung bạo lực / nhạy cảm', onPress: () => handleReportStory('Nội dung bạo lực / nhạy cảm') },
-        { text: 'Vi phạm bản quyền', onPress: () => handleReportStory('Vi phạm bản quyền') },
-        { text: 'Spam / Lừa đảo', onPress: () => handleReportStory('Spam / Lừa đảo') },
-        { text: 'Hủy', style: 'cancel' },
-      ],
-    );
+  function openReview() {
+    setReviewContent(apiDetail.myReview?.content ?? '');
+    setReviewStars(apiDetail.myReview?.stars ?? apiDetail.myRating ?? 5);
+    setReviewVisible(true);
   }
 
-  function openReviewModal() {
-    setDraftStars(myReview?.stars ?? 5);
-    setDraftContent(myReview?.content ?? '');
-    setReviewModalVisible(true);
-  }
-
-  async function handleSubmitReview() {
+  async function handleSaveReview() {
     if (!displayStory.id) return;
-    setSubmittingReview(true);
+    const content = reviewContent.trim();
+    if (!content) {
+      Alert.alert('Thiếu nội dung', 'Vui lòng nhập nhận xét cho bài đánh giá.');
+      return;
+    }
+    setSavingReview(true);
     try {
-      const res = await StoriesServices.rateStory(displayStory.id, draftStars, draftContent.trim());
-      setReviewModalVisible(false);
+      await StoriesServices.saveReview(displayStory.id, {
+        content,
+        stars: reviewStars,
+      });
+      setReviewVisible(false);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['story-detail', storyId] }),
-        queryClient.invalidateQueries({ queryKey: ['story-ratings', storyId] }),
+        queryClient.invalidateQueries({ queryKey: ['story-reviews', storyId] }),
+        queryClient.invalidateQueries({ queryKey: ['stories'] }),
       ]);
-      Alert.alert('Thành công', `Cảm ơn bạn đã đánh giá ${draftStars} sao! (Điểm trung bình: ${res.rating}★)`);
+      Alert.alert('Thành công', 'Bài đánh giá của bạn đã được lưu.');
     } catch (err: unknown) {
-      const errorMsg = await parseApiError(err, 'Gửi đánh giá thất bại.');
+      const errorMsg = await parseApiError(err, 'Không thể lưu bài đánh giá.');
       Alert.alert('Lỗi', errorMsg);
     } finally {
-      setSubmittingReview(false);
+      setSavingReview(false);
     }
   }
 
@@ -254,7 +257,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
       onLeftPress={() => {
         navigation.goBack();
       }}
-      onRightPress={promptReportStory}
+      onRightPress={() => setReportVisible(true)}
       rightIcon="flag"
       padded={false}
       scroll={false}
@@ -286,15 +289,16 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
             <AuthorBar
               author={displayStory.author}
               following={isFollowing}
-              onToggleFollow={handleToggleFollow}
+              onPress={() => navigation.navigate(Paths.UserProfile, { userId: displayStory.author.id })}
+              onToggleFollow={user?.id === displayStory.author.id ? undefined : handleToggleFollow}
             />
           </View>
 
           <View style={statsContainerStyle}>
-            <Pressable onPress={openReviewModal}>
+            <Pressable onPress={openReview}>
               <StatItem
                 label={t('story_detail.rating_label')}
-                value={<RatingStars value={displayStory.rating ?? 0} />}
+                value={<RatingStars count={apiDetail.ratingCount ?? 0} value={displayStory.rating ?? 0} />}
               />
             </Pressable>
             <View
@@ -354,33 +358,49 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           ) : (
             <View style={tabContentStyle}>
               <Button
-                label={myReview ? t('story_detail.edit_review') : t('story_detail.write_review')}
-                onPress={openReviewModal}
-                variant="outlined"
+                label={apiDetail.myReview?.content ? 'Sửa đánh giá của bạn' : 'Viết đánh giá'}
+                onPress={openReview}
+                variant="tonal"
               />
-              {reviews.length > 0 ? (
+              {reviewsLoading ? (
+                <Skeleton height={96} loading />
+              ) : reviews.length > 0 ? (
                 reviews.map((review) => (
                   <View
                     key={review.id}
-                    style={[
-                      gutters.gap_4,
-                      gutters.padding_12,
-                      borders.rounded_12,
-                      borders.w_1,
-                      { borderColor: colors.outlineVariant },
-                    ]}
+                    style={{
+                      backgroundColor: colors.surfaceContainerLowest,
+                      borderColor: colors.outlineVariant,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      padding: 14,
+                    }}
                   >
-                    <View style={[layout.row, layout.itemsCenter, layout.justifyBetween]}>
-                      <AppText color="onSurface" variant="labelMd">
-                        {review.user?.name ?? 'Độc giả'}
-                      </AppText>
-                      <RatingStars value={review.stars ?? 0} />
+                    <View style={[layout.row, layout.itemsCenter, gutters.gap_12]}>
+                      <Pressable
+                        onPress={() => navigation.navigate(Paths.UserProfile, { userId: review.user.id })}
+                      >
+                        <Avatar size={40} uri={review.user.avatarUri ?? undefined} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => navigation.navigate(Paths.UserProfile, { userId: review.user.id })}
+                        style={layout.flex_1}
+                      >
+                        <AppText color="onSurface" variant="labelMd">
+                          {review.user.name}
+                        </AppText>
+                        <AppText color="onSurfaceVariant" variant="labelSm">
+                          {review.user.handle ? `@${review.user.handle.replace(/^@/, '')}` : 'Độc giả'}
+                        </AppText>
+                      </Pressable>
+                      <RatingStars value={review.stars} />
                     </View>
-                    {review.content ? (
-                      <AppText color="onSurfaceVariant" variant="bodyMd">
-                        {review.content}
-                      </AppText>
-                    ) : undefined}
+                    <AppText color="onSurface" style={gutters.marginTop_12} variant="bodyMd">
+                      {review.content}
+                    </AppText>
+                    <AppText color="onSurfaceVariant" style={gutters.marginTop_8} variant="labelSm">
+                      {new Date(review.updatedAt).toLocaleDateString('vi-VN')}
+                    </AppText>
                   </View>
                 ))
               ) : (
@@ -432,76 +452,100 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           </View>
         </View>
 
-        <Modal
-          animationType="slide"
-          onRequestClose={() => setReviewModalVisible(false)}
-          transparent
-          visible={reviewModalVisible}
-        >
-          <Pressable
-            onPress={() => setReviewModalVisible(false)}
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)', flex: 1, justifyContent: 'flex-end' }}
-          >
-            <Pressable
-              onPress={() => {}}
-              style={[
-                backgrounds.surface,
-                gutters.padding_24,
-                gutters.gap_16,
-                { borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-              ]}
-            >
-              <View style={[layout.row, layout.itemsCenter, layout.justifyBetween]}>
-                <AppText color="onSurface" variant="headlineMd">
-                  {myReview ? t('story_detail.edit_review') : t('story_detail.write_review')}
-                </AppText>
-                <Pressable onPress={() => setReviewModalVisible(false)}>
-                  <AppText color="primary" variant="labelMd">
-                    {t('reader.close')}
-                  </AppText>
-                </Pressable>
-              </View>
+        {reportVisible ? (
+          <ReportDialog
+            loading={reporting}
+            onClose={() => setReportVisible(false)}
+            onSubmit={handleReportStory}
+            reasons={[
+              'Nội dung bạo lực hoặc nhạy cảm',
+              'Vi phạm bản quyền',
+              'Spam hoặc lừa đảo',
+            ]}
+            targetLabel={`truyện “${displayStory.title}”`}
+            visible
+          />
+        ) : undefined}
 
-              <View style={[layout.row, layout.justifyCenter, gutters.gap_8]}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Pressable hitSlop={8} key={star} onPress={() => setDraftStars(star)}>
+        <Modal
+          animationType="fade"
+          onRequestClose={() => setReviewVisible(false)}
+          transparent
+          visible={reviewVisible}
+        >
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              flex: 1,
+              justifyContent: 'center',
+              padding: 20,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: colors.surfaceContainerLowest,
+                borderRadius: 20,
+                maxWidth: 420,
+                padding: 24,
+                width: '100%',
+              }}
+            >
+              <AppText color="onSurface" variant="headlineMd">
+                {apiDetail.myReview?.content ? 'Sửa bài đánh giá' : 'Viết bài đánh giá'}
+              </AppText>
+              <AppText color="onSurfaceVariant" style={gutters.marginTop_8} variant="bodyMd">
+                Chọn số sao và chia sẻ cảm nhận của bạn về truyện.
+              </AppText>
+              <View style={[layout.row, gutters.gap_8, gutters.marginTop_16]}>
+                {[1, 2, 3, 4, 5].map((stars) => (
+                  <Pressable key={stars} onPress={() => setReviewStars(stars)}>
                     <AppIcon
-                      color={star <= draftStars ? 'tertiary' : 'onSurfaceVariant'}
+                      color={stars <= reviewStars ? 'tertiary' : 'outlineVariant'}
                       name="star"
                       size={32}
                     />
                   </Pressable>
                 ))}
               </View>
-
               <TextInput
+                maxLength={1000}
                 multiline
-                numberOfLines={4}
-                onChangeText={setDraftContent}
-                placeholder={t('story_detail.review_placeholder')}
+                onChangeText={setReviewContent}
+                placeholder="Nhập nhận xét của bạn..."
                 placeholderTextColor={colors.onSurfaceVariant}
-                style={[
-                  gutters.padding_12,
-                  borders.rounded_12,
-                  borders.w_1,
-                  {
-                    borderColor: colors.outlineVariant,
-                    color: colors.onSurface,
-                    minHeight: 96,
-                    textAlignVertical: 'top',
-                  },
-                ]}
-                value={draftContent}
+                style={{
+                  borderColor: colors.outlineVariant,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  color: colors.onSurface,
+                  height: 120,
+                  marginTop: 16,
+                  padding: 12,
+                  textAlignVertical: 'top',
+                }}
+                value={reviewContent}
               />
-
-              <Button
-                disabled={submittingReview}
-                label={submittingReview ? '...' : t('story_detail.submit_review')}
-                onPress={handleSubmitReview}
-                variant="filled"
-              />
-            </Pressable>
-          </Pressable>
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+                <View style={layout.flex_1}>
+                  <Button
+                    fullWidth
+                    label="Hủy"
+                    onPress={() => setReviewVisible(false)}
+                    variant="outlined"
+                  />
+                </View>
+                <View style={layout.flex_1}>
+                  <Button
+                    disabled={savingReview || !reviewContent.trim()}
+                    fullWidth
+                    label={savingReview ? 'Đang lưu...' : 'Lưu đánh giá'}
+                    onPress={handleSaveReview}
+                  />
+                </View>
+              </View>
+            </View>
+          </View>
         </Modal>
       </View>
     </ScreenContainer>

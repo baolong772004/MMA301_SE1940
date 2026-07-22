@@ -14,7 +14,8 @@ import { parseApiError } from '@/services/auth';
 import { ReportServices } from '@/services/reports';
 import { LocalNotificationServices } from '@/services/notifications/localNotificationService';
 
-import { AppIcon, AppText, Button, ProgressBar } from '@/components/atoms';
+import { AppIcon, AppText, Button } from '@/components/atoms';
+import { ReportDialog } from '@/components/molecules';
 import { ScreenContainer } from '@/components/templates';
 
 
@@ -40,6 +41,8 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
   const [unlocking, setUnlocking] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [postingComment, setPostingComment] = useState(false);
+  const [reportTarget, setReportTarget] = useState<null | { id: string; name: string }>(null);
+  const [reportingComment, setReportingComment] = useState(false);
 
   // Tự động lưu vị trí đọc dở lên server (PUT /library/:storyId/progress)
   useEffect(() => {
@@ -60,7 +63,7 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
     enabled: !!activeChapterId,
   });
 
-  const { data: commentsList, isLoading: isFetchingComments } = useQuery({
+  const { data: commentsList } = useQuery({
     queryKey: ['chapter-comments', activeChapterId],
     queryFn: () => ChaptersServices.getComments(activeChapterId!),
     enabled: !!activeChapterId,
@@ -96,39 +99,27 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
     }
   }
 
-  async function handleReportComment(commentId: string, commenterName: string) {
-    Alert.alert(
-      'Báo cáo bình luận',
-      `Chọn lý do báo cáo bình luận của ${commenterName}:`,
-      [
-        {
-          text: 'Nội dung phản cảm / bạo lực',
-          onPress: () => submitCommentReport(commentId, commenterName, 'Nội dung phản cảm / bạo lực'),
-        },
-        {
-          text: 'Spam / Quảng cáo',
-          onPress: () => submitCommentReport(commentId, commenterName, 'Spam / Quảng cáo'),
-        },
-        {
-          text: 'Quấy rối / Công kích',
-          onPress: () => submitCommentReport(commentId, commenterName, 'Quấy rối / Công kích'),
-        },
-        { text: 'Hủy', style: 'cancel' },
-      ],
-    );
+  function handleReportComment(commentId: string, commenterName: string) {
+    setCommentsVisible(false);
+    setReportTarget({ id: commentId, name: commenterName });
   }
 
-  async function submitCommentReport(commentId: string, commenterName: string, reason: string) {
+  async function submitCommentReport(reason: string) {
+    if (!reportTarget) return;
+    setReportingComment(true);
     try {
-      await ReportServices.createReport({ commentId, reason });
+      await ReportServices.createReport({ commentId: reportTarget.id, reason });
       Alert.alert('Thành công', 'Báo cáo vi phạm bình luận đã được gửi lên hệ thống kiểm duyệt.');
       LocalNotificationServices.addNotification(
-        `Cám ơn bạn! Báo cáo vi phạm về bình luận của "${commenterName}" đã được gửi lên hệ thống. Đội ngũ kiểm duyệt sẽ xử lý trong vòng 24h.`,
+        `Cám ơn bạn! Báo cáo vi phạm về bình luận của "${reportTarget.name}" đã được gửi lên hệ thống. Đội ngũ kiểm duyệt sẽ xử lý trong vòng 24h.`,
         'fire'
       );
+      setReportTarget(null);
     } catch (err: unknown) {
       const errorMsg = await parseApiError(err, 'Gửi báo cáo thất bại.');
       Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setReportingComment(false);
     }
   }
 
@@ -521,9 +512,17 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
                   commentsList.map((cmt: any) => (
                     <View key={cmt.id} style={{ backgroundColor: '#F4F4F6', borderRadius: 12, padding: 12, marginBottom: 10 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <AppText color="primary" variant="labelMd">
-                          {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle}` : ''}
-                        </AppText>
+                        <Pressable
+                          disabled={!cmt.user?.id}
+                          onPress={() => {
+                            setCommentsVisible(false);
+                            navigation.navigate(Paths.UserProfile, { userId: cmt.user.id });
+                          }}
+                        >
+                          <AppText color="primary" variant="labelMd">
+                            {cmt.user?.name ?? 'Độc giả'} {cmt.user?.handle ? `@${cmt.user.handle.replace(/^@/, '')}` : ''}
+                          </AppText>
+                        </Pressable>
                         <Pressable
                           hitSlop={8}
                           onPress={() => handleReportComment(cmt.id, cmt.user?.name ?? 'Độc giả')}
@@ -567,6 +566,21 @@ function Reader({ navigation, route }: RootScreenProps<Paths.Reader>) {
             </Pressable>
           </Pressable>
         </Modal>
+
+        {reportTarget ? (
+          <ReportDialog
+            loading={reportingComment}
+            onClose={() => setReportTarget(null)}
+            onSubmit={submitCommentReport}
+            reasons={[
+              'Nội dung phản cảm hoặc bạo lực',
+              'Spam hoặc quảng cáo',
+              'Quấy rối hoặc công kích cá nhân',
+            ]}
+            targetLabel={`bình luận của ${reportTarget.name}`}
+            visible
+          />
+        ) : undefined}
       </View>
     </ScreenContainer>
   );

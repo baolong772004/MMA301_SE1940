@@ -29,12 +29,17 @@ export class WalletService {
    * thành công ngay; khi có cổng thật, thay bằng flow tạo đơn + webhook xác nhận.
    */
   async topup(amount: number, method: string, user: AuthUser) {
+    if (!user.emailVerified) {
+      throw new ForbiddenException(
+        'Vui lòng xác thực email trước khi thực hiện giao dịch nạp xu.',
+      );
+    }
     if (amount <= 0) {
       throw new BadRequestException('Số xu nạp phải lớn hơn 0');
     }
     const [updated] = await this.prisma.$transaction([
       this.prisma.user.update({
-        data: { coinBalance: { increment: amount }, emailVerified: true },
+        data: { coinBalance: { increment: amount } },
         where: { id: user.id },
       }),
       this.prisma.transaction.create({
