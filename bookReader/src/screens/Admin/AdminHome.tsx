@@ -77,7 +77,29 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
     }
   }
 
-  async function handleResolveReport(reportId: string, status: 'RESOLVED' | 'DISMISSED', action?: 'HIDE_COMMENT' | 'KEEP_COMMENT') {
+  async function submitRejection() {
+    if (!rejectStoryId) return;
+    if (!rejectNote.trim()) {
+      Alert.alert('Thông báo', 'Vui lòng nhập lý do từ chối');
+      return;
+    }
+
+    setLoadingStoryId(rejectStoryId);
+    try {
+      await AdminServices.moderateStory(rejectStoryId, 'REJECTED', rejectNote.trim());
+      Alert.alert('Thành công', 'Đã từ chối duyệt bộ truyện!');
+      setRejectModalVisible(false);
+      await queryClient.invalidateQueries({ queryKey: ['admin-stories'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    } catch (err: unknown) {
+      const errorMsg = await parseApiError(err, 'Thao tác kiểm duyệt thất bại.');
+      Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setLoadingStoryId(null);
+    }
+  }
+
+  async function handleResolveReport(reportId: string, status: 'RESOLVED' | 'DISMISSED', action?: 'HIDE_COMMENT' | 'REJECT_STORY' | 'BAN_USER') {
     setLoadingReportId(reportId);
     try {
       await AdminServices.resolveReport(reportId, { status, action });
@@ -242,7 +264,11 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
                           <Button
                             label="Từ chối"
                             variant="outlined"
-                            onPress={() => handleModerate(story.id, 'REJECTED')}
+                            onPress={() => {
+                              setRejectStoryId(story.id);
+                              setRejectNote('');
+                              setRejectModalVisible(true);
+                            }}
                             disabled={loadingStoryId === story.id}
                             fullWidth
                           />

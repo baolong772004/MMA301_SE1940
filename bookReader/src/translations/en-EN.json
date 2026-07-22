@@ -59,6 +59,8 @@
       "days": "{{count}} Days",
       "days_consecutive": "{{count}} Days Reading Streak!",
       "subtitle": "Read every day to keep your streak alive!",
+      "longest_streak": "Longest Streak",
+      "total_days": "Total Days",
       "day_1": "M",
       "day_2": "T",
       "day_3": "W",

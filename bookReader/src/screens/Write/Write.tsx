@@ -53,6 +53,12 @@ function Write() {
     enabled: !!editingStoryId,
   });
 
+  const { data: storyStats } = useQuery({
+    queryKey: ['story-stats', editingStoryId],
+    queryFn: () => StoriesServices.getStoryStats(editingStoryId!),
+    enabled: !!editingStoryId,
+  });
+
   const [isImporting, setIsImporting] = useState(false);
 
   async function handleImportFile() {
@@ -470,6 +476,35 @@ function Write() {
                 }}
               />
 
+              {/* Thống kê bộ truyện */}
+              {editingStoryId && storyStats ? (
+                <View style={{ marginBottom: 20, borderTopWidth: 1, borderTopColor: '#EEE', paddingTop: 16 }}>
+                  <AppText color="onSurface" variant="headlineMd" style={{ marginBottom: 12 }}>
+                    Thống kê bộ truyện
+                  </AppText>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <View style={{ flex: 1, backgroundColor: '#F4F4F6', borderRadius: 12, padding: 10, alignItems: 'center' }}>
+                      <AppText color="primary" variant="headlineMd" style={{ fontWeight: '700' }}>
+                        {storyStats.viewCount ?? 0}
+                      </AppText>
+                      <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontSize: 10 }}>Lượt xem</AppText>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: '#F4F4F6', borderRadius: 12, padding: 10, alignItems: 'center' }}>
+                      <AppText color="primary" variant="headlineMd" style={{ fontWeight: '700' }}>
+                        {storyStats.rating ?? 0} ★
+                      </AppText>
+                      <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontSize: 10 }}>Đánh giá ({storyStats.ratingCount ?? 0})</AppText>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: '#F4F4F6', borderRadius: 12, padding: 10, alignItems: 'center' }}>
+                      <AppText color="primary" variant="headlineMd" style={{ fontWeight: '700' }}>
+                        {storyStats.totalRevenueCoin ?? 0} 🪙
+                      </AppText>
+                      <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontSize: 10 }}>Doanh thu xu</AppText>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
+
               {editingStoryId ? (
                 <View style={{ marginBottom: 20, borderTopWidth: 1, borderTopColor: '#EEE', paddingTop: 16 }}>
                   <View style={{ marginBottom: 16 }}>
@@ -485,31 +520,35 @@ function Write() {
                   </View>
 
                   {Array.isArray((currentStoryDetail as any)?.chapters) && (currentStoryDetail as any).chapters.length > 0 ? (
-                    (currentStoryDetail as any).chapters.map((chap: any) => (
-                      <Pressable
-                        key={chap.id}
-                        onPress={() => openEditChapterModal(chap)}
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          backgroundColor: '#F9F9FB',
-                          padding: 12,
-                          borderRadius: 12,
-                          marginBottom: 8,
-                        }}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <AppText color="onSurface" variant="labelMd">
-                            Chương {chap.index}: {chap.title}
-                          </AppText>
-                          <AppText color="onSurfaceVariant" variant="labelSm">
-                            {chap.status === 'PUBLISHED' ? 'Đã xuất bản' : 'Bản nháp'} {chap.isVip ? '• VIP' : ''}
-                          </AppText>
-                        </View>
-                        <AppIcon color="onSurfaceVariant" name="chevron_right" />
-                      </Pressable>
-                    ))
+                    (currentStoryDetail as any).chapters.map((chap: any) => {
+                      const stats = storyStats?.chapters?.find((c: any) => c.id === chap.id);
+                      return (
+                        <Pressable
+                          key={chap.id}
+                          onPress={() => openEditChapterModal(chap)}
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            backgroundColor: '#F9F9FB',
+                            padding: 12,
+                            borderRadius: 12,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <AppText color="onSurface" variant="labelMd">
+                              Chương {chap.index}: {chap.title}
+                            </AppText>
+                            <AppText color="onSurfaceVariant" variant="labelSm" style={{ marginTop: 2 }}>
+                              {chap.status === 'PUBLISHED' ? 'Đã xuất bản' : 'Bản nháp'} {chap.isVip ? `• VIP (${chap.coinPrice ?? 0} xu)` : ''}
+                              {stats ? `  •  🔓 ${stats.unlockCount ?? 0}  •  💬 ${stats.commentCount ?? 0}` : ''}
+                            </AppText>
+                          </View>
+                          <AppIcon color="onSurfaceVariant" name="chevron_right" />
+                        </Pressable>
+                      );
+                    })
                   ) : (
                     <AppText color="onSurfaceVariant" variant="bodyMd" style={{ fontStyle: 'italic', marginVertical: 8 }}>
                       Chưa có chương nào. Bấm "+ Thêm chương" ở trên để viết chương đầu tiên!

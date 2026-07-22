@@ -32,6 +32,12 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
   // Tô màu currentStreak ngày gần nhất trong lưới 7 ngày (từ phải sang trái)
   const streakHistory = DAY_LABELS.map((_, i) => i >= 7 - currentStreak);
 
+  const days = DAY_LABELS.map((labelKey, i) => ({
+    key: labelKey,
+    label: t(`streak.${labelKey}`),
+    achieved: streakHistory[i],
+  }));
+
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const cardStyle: any = [
     backgrounds.surfaceContainerLow,
@@ -91,36 +97,59 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
             <AppText color="onSurfaceVariant" style={{ textAlign: 'center' }} variant="bodyMd">
               {t('streak.subtitle')}
             </AppText>
+          </View>
 
-        <View style={gridContainerStyle}>
-          {days.map((day) => {
-            const circleStyle = [
-              circleBaseStyle,
-              day.achieved
-                ? backgrounds.tertiaryContainer
-                : backgrounds.surfaceContainerHighest,
-            ];
+          <View style={gridContainerStyle}>
+            {days.map((day) => {
+              const circleStyle = [
+                circleBaseStyle,
+                day.achieved
+                  ? backgrounds.tertiaryContainer
+                  : backgrounds.surfaceContainerHighest,
+              ];
 
-            return (
-              <View key={day.label} style={dayItemStyle}>
-                <View style={circleStyle}>
-                  <AppIcon
-                    color={day.achieved ? 'tertiary' : 'outlineVariant'}
-                    name="fire"
-                    size={20}
-                  />
+              return (
+                <View key={day.key} style={dayItemStyle}>
+                  <View style={circleStyle}>
+                    <AppIcon
+                      color={day.achieved ? 'tertiary' : 'outlineVariant'}
+                      name="fire"
+                      size={20}
+                    />
+                  </View>
+                  <AppText
+                    color={day.achieved ? 'tertiary' : 'onSurfaceVariant'}
+                    variant="labelSm"
+                  >
+                    {day.label}
+                  </AppText>
                 </View>
-                <AppText
-                  color={day.achieved ? 'tertiary' : 'onSurfaceVariant'}
-                  variant="labelSm"
-                >
-                  {day.label}
-                </AppText>
-              </View>
-            );
-          })}
-        </View>
-      </View>
+              );
+            })}
+          </View>
+
+          {/* Thống kê bổ sung */}
+          <View style={[layout.row, gutters.gap_12, gutters.marginTop_24]}>
+            <View style={[{ flex: 1, padding: 16, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.outlineVariant }, backgrounds.surfaceContainerLow, borders.rounded_16 as any]}>
+              <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontSize: 11, textAlign: 'center' }}>
+                {t('streak.longest_streak')}
+              </AppText>
+              <AppText color="tertiary" variant="headlineMd" style={{ fontWeight: '700' }}>
+                {t('streak.days', { count: longestStreak })}
+              </AppText>
+            </View>
+
+            <View style={[{ flex: 1, padding: 16, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.outlineVariant }, backgrounds.surfaceContainerLow, borders.rounded_16 as any]}>
+              <AppText color="onSurfaceVariant" variant="labelSm" style={{ fontSize: 11, textAlign: 'center' }}>
+                {t('streak.total_days')}
+              </AppText>
+              <AppText color="tertiary" variant="headlineMd" style={{ fontWeight: '700' }}>
+                {t('streak.days', { count: totalReadingDays })}
+              </AppText>
+            </View>
+          </View>
+        </>
+      )}
     </ScreenContainer>
   );
 }
