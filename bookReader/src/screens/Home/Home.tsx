@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
@@ -10,7 +9,6 @@ import { StoriesServices } from '@/services/stories';
 
 import { Skeleton, AppText } from '@/components/atoms';
 import {
-  ContinueReadingCard,
   SearchBar,
   SectionHeader,
 } from '@/components/molecules';

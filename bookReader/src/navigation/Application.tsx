@@ -7,7 +7,7 @@ import { Paths } from '@/navigation/paths';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 
-import { Example, Reader, Search, Settings, Startup, StoryDetail, Streak, Login, Admin, Register, VerifyOtp } from '@/screens';
+import { Example, Reader, Search, Settings, Startup, StoryDetail, Streak, Login, Admin, Register, UserProfile, VerifyOtp } from '@/screens';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -30,6 +30,7 @@ function ApplicationNavigator() {
           <Stack.Screen component={Search} name={Paths.Search} />
           <Stack.Screen component={Settings} name={Paths.Settings} />
           <Stack.Screen component={Streak} name={Paths.Streak} />
+          <Stack.Screen component={UserProfile} name={Paths.UserProfile} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

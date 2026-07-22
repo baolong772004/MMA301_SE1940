@@ -274,7 +274,12 @@ async function main() {
 
   // Đánh giá mẫu của reader
   await prisma.rating.create({
-    data: { stars: 5, storyId: stories[1].id, userId: reader.id },
+    data: {
+      content: 'Cốt truyện lôi cuốn, nhân vật được xây dựng rất có chiều sâu.',
+      stars: 5,
+      storyId: stories[1].id,
+      userId: reader.id,
+    },
   });
 
   // Giao dịch nạp xu ban đầu của reader

@@ -20,7 +20,7 @@ import { storage } from '@/services/storage';
 import { LocalNotificationServices } from '@/services/notifications/localNotificationService';
 
 function Login({ navigation }: RootScreenProps<Paths.Login>) {
-  const { layout, gutters, colors, borders } = useTheme();
+  const { layout } = useTheme();
   const { saveUser } = useUser();
 
   const [email, setEmail] = useState('');

@@ -25,17 +25,6 @@ const STATUSES = [
 ];
 const SORTS = ['Default', 'Rating', 'Views'];
 
-const parseViews = (viewsString = '0') => {
-  const clean = viewsString.toUpperCase();
-  if (clean.endsWith('K')) {
-    return Number.parseFloat(clean.replace('K', '')) * 1000;
-  }
-  if (clean.endsWith('M')) {
-    return Number.parseFloat(clean.replace('M', '')) * 1_000_000;
-  }
-  return Number.parseFloat(clean) || 0;
-};
-
 function Search({ navigation }: RootScreenProps<Paths.Search>) {
   const { borders, colors, gutters, layout } = useTheme();
   const { t } = useTranslation();

@@ -15,5 +15,6 @@ export const enum Paths {
   VerifyOtp = 'verify-otp',
   StoryDetail = 'story-detail',
   Streak = 'streak',
+  UserProfile = 'user-profile',
   Write = 'write',
 }

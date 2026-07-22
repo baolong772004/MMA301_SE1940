@@ -22,7 +22,7 @@ const getBaseUrl = () => {
   }
 
   // Tự động lấy IP máy dev từ Expo Metro khi chạy trên máy thật / giả lập
-  const hostUri = Constants.expoConfig?.hostUri;
+  const hostUri = Constants?.expoConfig?.hostUri;
   if (hostUri) {
     const hostIp = hostUri.split(':')[0];
     if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
