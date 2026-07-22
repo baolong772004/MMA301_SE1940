@@ -85,7 +85,7 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
         </AppText>
 
         <View style={gridContainerStyle}>
-          {days.map((day) => {
+          {days.map((day, index) => {
             const circleStyle = [
               circleBaseStyle,
               day.achieved
@@ -94,7 +94,7 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
             ];
 
             return (
-              <View key={day.label} style={dayItemStyle}>
+              <View key={`${day.label}-${index}`} style={dayItemStyle}>
                 <View style={circleStyle}>
                   <AppIcon
                     color={day.achieved ? 'tertiary' : 'outlineVariant'}

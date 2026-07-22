@@ -45,10 +45,24 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
     queryFn: () => AdminServices.getUsers(),
   });
 
-  async function handleModerate(storyId: string, moderation: 'APPROVED' | 'REJECTED') {
+  async function handleModerate(storyId: string, moderation: 'APPROVED' | 'REJECTED', note?: string) {
+    if (moderation === 'REJECTED' && !note) {
+      Alert.alert(
+        'Lý do từ chối',
+        'Vui lòng chọn lý do từ chối duyệt bộ truyện này:',
+        [
+          { text: 'Nội dung không phù hợp', onPress: () => handleModerate(storyId, 'REJECTED', 'Nội dung không phù hợp') },
+          { text: 'Ảnh bìa vi phạm', onPress: () => handleModerate(storyId, 'REJECTED', 'Ảnh bìa vi phạm') },
+          { text: 'Vi phạm bản quyền', onPress: () => handleModerate(storyId, 'REJECTED', 'Vi phạm bản quyền') },
+          { text: 'Hủy', style: 'cancel' },
+        ],
+      );
+      return;
+    }
+
     setLoadingStoryId(storyId);
     try {
-      await AdminServices.moderateStory(storyId, moderation);
+      await AdminServices.moderateStory(storyId, moderation, note);
       Alert.alert('Thành công', moderation === 'APPROVED' ? 'Đã duyệt bộ truyện!' : 'Đã từ chối bộ truyện!');
       await queryClient.invalidateQueries({ queryKey: ['admin-stories'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
@@ -60,7 +74,11 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
     }
   }
 
-  async function handleResolveReport(reportId: string, status: 'RESOLVED' | 'DISMISSED', action?: 'HIDE_COMMENT' | 'KEEP_COMMENT') {
+  async function handleResolveReport(
+    reportId: string,
+    status: 'RESOLVED' | 'DISMISSED',
+    action?: 'HIDE_COMMENT' | 'REJECT_STORY' | 'BAN_USER',
+  ) {
     setLoadingReportId(reportId);
     try {
       await AdminServices.resolveReport(reportId, { status, action });
@@ -196,7 +214,7 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
                         <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                           <Tag
                             label={story.moderation === 'APPROVED' ? 'Đã duyệt' : story.moderation === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt'}
-                            tone={story.moderation === 'APPROVED' ? 'primary' : story.moderation === 'REJECTED' ? 'error' : 'secondary'}
+                            tone={story.moderation === 'APPROVED' ? 'primary' : story.moderation === 'REJECTED' ? 'tertiary' : 'secondary'}
                           />
                         </View>
                       </View>
@@ -362,7 +380,7 @@ function AdminHome({ navigation }: RootScreenProps<Paths.Admin>) {
                     </View>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <Tag label={usr.role} tone="primary" />
-                      <Tag label={usr.status} tone={usr.status === 'ACTIVE' ? 'primary' : 'error'} />
+                      <Tag label={usr.status} tone={usr.status === 'ACTIVE' ? 'primary' : 'tertiary'} />
                     </View>
                   </View>
 
