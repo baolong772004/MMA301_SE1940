@@ -23,6 +23,10 @@ model User {
   status        String   @default("ACTIVE") // ACTIVE | BANNED
   emailVerified Boolean  @default(false)
   coinBalance   Int      @default(0)
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  totalReadingDays Int      @default(0)
+  lastReadAt      DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -37,6 +41,7 @@ model User {
   unlocks        ChapterUnlock[]
   otpCodes       OtpCode[]
   reports        Report[]          @relation("reporter")
+  notifications  Notification[]
 }
 
 model OtpCode {
@@ -211,3 +216,15 @@ model Report {
   story    Story?   @relation(fields: [storyId], references: [id], onDelete: SetNull)
   comment  Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
 }
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

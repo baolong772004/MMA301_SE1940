@@ -96,18 +96,73 @@ export class LibraryService {
     if (!chapter) {
       throw new NotFoundException('Chương không tồn tại trong truyện này');
     }
-    const [progress] = await this.prisma.$transaction([
-      this.prisma.readingProgress.upsert({
+
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+
+    return this.prisma.$transaction(async (tx) => {
+      const userData = await tx.user.findUniqueOrThrow({
+        select: { currentStreak: true, longestStreak: true, lastReadAt: true, totalReadingDays: true },
+        where: { id: user.id },
+      });
+
+      let newCurrentStreak = userData.currentStreak;
+      let newLongestStreak = userData.longestStreak;
+      let shouldUpdateStreak = false;
+
+      if (userData.lastReadAt) {
+        const lastReadStr = userData.lastReadAt.toISOString().slice(0, 10);
+        if (lastReadStr !== todayStr) {
+          const lastReadDate = new Date(lastReadStr);
+          const todayDate = new Date(todayStr);
+          const diffMs = todayDate.getTime() - lastReadDate.getTime();
+          const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) {
+            newCurrentStreak = userData.currentStreak + 1;
+          } else {
+            newCurrentStreak = 1;
+          }
+          shouldUpdateStreak = true;
+        }
+      } else {
+        newCurrentStreak = 1;
+        shouldUpdateStreak = true;
+      }
+
+      if (shouldUpdateStreak) {
+        if (newCurrentStreak > newLongestStreak) {
+          newLongestStreak = newCurrentStreak;
+        }
+        await tx.user.update({
+          data: {
+            currentStreak: newCurrentStreak,
+            lastReadAt: now,
+            longestStreak: newLongestStreak,
+            totalReadingDays: { increment: 1 }, // +1 ngày đọc mới
+          },
+          where: { id: user.id },
+        });
+      } else {
+        await tx.user.update({
+          data: { lastReadAt: now },
+          where: { id: user.id },
+        });
+      }
+
+      const progress = await tx.readingProgress.upsert({
         create: { chapterId, position, storyId, userId: user.id },
         update: { chapterId, position },
         where: { userId_storyId: { storyId, userId: user.id } },
-      }),
-      this.prisma.libraryEntry.upsert({
+      });
+
+      await tx.libraryEntry.upsert({
         create: { shelf: 'READING', storyId, userId: user.id },
         update: {},
         where: { userId_storyId: { storyId, userId: user.id } },
-      }),
-    ]);
-    return progress;
+      });
+
+      return progress;
+    });
   }
 }

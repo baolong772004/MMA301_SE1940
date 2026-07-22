@@ -9,7 +9,6 @@ import { useTheme } from '@/theme';
 import { UserServices } from '@/services/users';
 import { StoriesServices } from '@/services/stories';
 import { LibraryServices } from '@/services/library';
-import { AdminServices } from '@/services/admin';
 import { ReportServices } from '@/services/reports';
 import { parseApiError } from '@/services/auth';
 import { LocalNotificationServices } from '@/services/notifications/localNotificationService';
@@ -30,10 +29,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
-  const [following, setFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-
-  const mockDescription = t('story_detail.mock_description');
 
   const { data: apiDetail, isLoading: isDetailLoading } = useQuery({
     queryKey: ['story-detail', storyId],
@@ -41,17 +37,16 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
     enabled: !!storyId,
   });
 
+  const authorId = apiDetail?.author?.id;
+
+  // Lấy hồ sơ tác giả thực tế để đọc trạng thái isFollowing
   const { data: authorProfile } = useQuery({
-    queryKey: ['author-profile', apiDetail?.author?.id],
-    queryFn: () => UserServices.getProfile(apiDetail!.author!.id),
-    enabled: !!apiDetail?.author?.id,
+    queryKey: ['author-profile', authorId],
+    queryFn: () => UserServices.getProfile(authorId!),
+    enabled: !!authorId,
   });
 
-  useEffect(() => {
-    if (authorProfile) {
-      setFollowing(authorProfile.isFollowing);
-    }
-  }, [authorProfile]);
+  const isFollowing = authorProfile?.isFollowing ?? false;
 
   const { data: readingProgress } = useQuery({
     queryKey: ['story-progress', storyId],
@@ -105,12 +100,10 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
   async function handleToggleFollow() {
     if (!displayStory.author?.id) return;
     try {
-      if (following) {
+      if (isFollowing) {
         await UserServices.unfollowUser(displayStory.author.id);
-        setFollowing(false);
       } else {
         await UserServices.followUser(displayStory.author.id);
-        setFollowing(true);
       }
       await queryClient.invalidateQueries({ queryKey: ['author-profile', displayStory.author.id] });
     } catch (err: unknown) {
@@ -264,7 +257,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           <View style={heroContainerStyle}>
             <Cover uri={displayStory.coverUri} width={120} />
             <View style={genresStyle}>
-              {displayStory.genres?.map((genre, index) => (
+              {displayStory.genres?.map((genre: string, index: number) => (
                 <Tag key={`${genre}-${index}`} label={genre} tone="secondary" />
               ))}
               {displayStory.status ? (
@@ -279,7 +272,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
             </AppText>
             <AuthorBar
               author={displayStory.author}
-              following={following}
+              following={isFollowing}
               onToggleFollow={handleToggleFollow}
             />
           </View>
@@ -354,10 +347,10 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
           )}
         </ScrollView>
 
-        {readingProgress?.chapter ? (
+        {(readingProgress as any)?.chapter ? (
           <View style={[layout.itemsCenter, gutters.paddingVertical_8, { backgroundColor: colors.surfaceVariant, marginHorizontal: 24, borderRadius: 8, marginBottom: 8 }]}>
             <AppText color="primary" variant="bodyMd" style={{ fontWeight: '600' }}>
-              📖 {t('story_detail.currently_reading')}: {readingProgress.chapter.title}
+              📖 {t('story_detail.currently_reading')}: {(readingProgress as any).chapter.title}
             </AppText>
           </View>
         ) : null}
@@ -386,7 +379,7 @@ function StoryDetail({ navigation, route }: RootScreenProps<Paths.StoryDetail>) 
             <Button
               label={t('story_detail.read_now')}
               onPress={() => {
-                const targetChapterId = readingProgress?.chapterId ?? displayStory.chaptersList?.[0]?.id;
+                const targetChapterId = (readingProgress as any)?.chapterId ?? displayStory.chaptersList?.[0]?.id;
                 navigation.navigate(Paths.Reader, { chapterId: targetChapterId, storyId: displayStory.id });
               }}
               variant="filled"

@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsInt,
@@ -32,11 +32,12 @@ export class UpdateChapterDto {
 }
 
 export class CreateCommentDto {
-  @ApiProperty({ description: 'Chỉ số đoạn văn trong chương (bắt đầu từ 0)' })
+  @ApiPropertyOptional({ description: 'Chỉ số đoạn văn trong chương (bắt đầu từ 0)' })
   @IsInt()
+  @IsOptional()
   @Min(0)
   @Type(() => Number)
-  paragraphIndex: number;
+  paragraphIndex?: number;
 
   @ApiProperty({ maxLength: 500 })
   @IsString()

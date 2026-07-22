@@ -9,7 +9,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.enableCors();
+  // CORS: production dùng ALLOWED_ORIGINS (comma-separated), dev cho phép tất cả
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const hasSpecificOrigins = allowedOrigins && allowedOrigins.length > 0;
+
+  app.enableCors({
+    // Có danh sách cụ thể → dùng list + bật credentials
+    // Không có → mở rộng cho dev nhưng KHÔNG bật credentials (wildcard + credentials bị browsers chặn)
+    credentials: hasSpecificOrigins,
+    origin: hasSpecificOrigins ? allowedOrigins : true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({ transform: true, whitelist: true }),
   );

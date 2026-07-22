@@ -47,6 +47,11 @@ export class AuthService {
     if (user.status === UserStatus.BANNED) {
       throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Tài khoản chưa xác thực email. Vui lòng nhập OTP.',
+      );
+    }
     return this.buildAuthResponse(user.id);
   }
 

@@ -1,5 +1,3 @@
-import type { ReadingProgress } from '@/models';
-
 import { Pressable, View } from 'react-native';
 
 import { useTheme } from '@/theme';
@@ -7,7 +5,7 @@ import { useTheme } from '@/theme';
 import { AppText, Cover } from '@/components/atoms';
 
 type Properties = {
-  readonly item: ReadingProgress;
+  readonly item: any;
   readonly onPress?: () => void;
 };
 

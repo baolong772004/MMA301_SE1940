@@ -17,6 +17,18 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async updateProfile(user: AuthUser, dto: { name?: string; avatarUri?: string; handle?: string }) {
+    const updated = await this.prisma.user.update({
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.handle && { handle: dto.handle }),
+        ...(dto.avatarUri !== undefined && { avatarUri: dto.avatarUri }),
+      },
+      where: { id: user.id },
+    });
+    return updated;
+  }
+
   async follow(targetId: string, user: AuthUser) {
     if (targetId === user.id) {
       throw new BadRequestException('Không thể tự theo dõi chính mình');
@@ -97,5 +109,22 @@ export class UsersService {
       where: { followerId: user.id, followingId: targetId },
     });
     return { following: false };
+  }
+
+  async getStreak(user: AuthUser) {
+    const userData = await this.prisma.user.findUniqueOrThrow({
+      select: {
+        currentStreak: true,
+        longestStreak: true,
+        totalReadingDays: true,
+      },
+      where: { id: user.id },
+    });
+
+    return {
+      currentStreak: userData.currentStreak,
+      longestStreak: userData.longestStreak,
+      totalReadingDays: userData.totalReadingDays,
+    };
   }
 }

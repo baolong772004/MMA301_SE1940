@@ -1,33 +1,36 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
- 
+
 import type { ViewStyle } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 
 import { Paths } from '@/navigation/paths';
 import type { RootScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme';
+import { UserServices } from '@/services/users';
 
 import { AppIcon, AppText } from '@/components/atoms';
 import { ScreenContainer } from '@/components/templates';
 
+const DAY_LABELS = ['day_1', 'day_2', 'day_3', 'day_4', 'day_5', 'day_6', 'day_7'] as const;
+
 function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
-  const { backgrounds, borders, gutters, layout } = useTheme();
+  const { backgrounds, borders, colors, gutters, layout } = useTheme();
   const { t } = useTranslation();
 
-  const streakDaysCount = 5;
-  const streakHistory = [true, true, true, true, true, false, false];
+  const { data: streakData, isLoading } = useQuery({
+    queryKey: ['user-streak'],
+    queryFn: () => UserServices.getStreak(),
+  });
 
-  const days = [
-    { achieved: streakHistory[0], label: t('streak.day_1') },
-    { achieved: streakHistory[1], label: t('streak.day_2') },
-    { achieved: streakHistory[2], label: t('streak.day_3') },
-    { achieved: streakHistory[3], label: t('streak.day_4') },
-    { achieved: streakHistory[4], label: t('streak.day_5') },
-    { achieved: streakHistory[5], label: t('streak.day_6') },
-    { achieved: streakHistory[6], label: t('streak.day_7') },
-  ];
+  const currentStreak = streakData?.currentStreak ?? 0;
+  const longestStreak = streakData?.longestStreak ?? 0;
+  const totalReadingDays = streakData?.totalReadingDays ?? 0;
+
+  // Tô màu currentStreak ngày gần nhất trong lưới 7 ngày (từ phải sang trái)
+  const streakHistory = DAY_LABELS.map((_, i) => i >= 7 - currentStreak);
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const cardStyle: any = [
@@ -61,31 +64,36 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
 
   return (
     <ScreenContainer
-      onLeftPress={() => {
-        navigation.goBack();
-      }}
+      onLeftPress={() => { navigation.goBack(); }}
       padded
       showBack
       title={t('streak.title')}
     >
-      <View style={cardStyle}>
-        <AppIcon color="tertiary" name="fire" size={80} />
-        
-        <View style={[layout.itemsCenter, gutters.gap_4]}>
-          <AppText color="tertiary" variant="display">
-            {streakDaysCount}
-          </AppText>
-          <AppText color="onSurface" style={{ textAlign: 'center' }} variant="headlineMd">
-            {t('streak.days_consecutive', { count: streakDaysCount })}
-          </AppText>
+      {isLoading ? (
+        <View style={[layout.itemsCenter, gutters.padding_24]}>
+          <ActivityIndicator size="large" color={colors.tertiary} />
         </View>
+      ) : (
+        <>
+          {/* Card streak chính */}
+          <View style={cardStyle}>
+            <AppIcon color="tertiary" name="fire" size={80} />
 
-        <AppText color="onSurfaceVariant" style={{ textAlign: 'center' }} variant="bodyMd">
-          {t('streak.subtitle')}
-        </AppText>
+            <View style={[layout.itemsCenter, gutters.gap_4]}>
+              <AppText color="tertiary" variant="display">
+                {currentStreak}
+              </AppText>
+              <AppText color="onSurface" style={{ textAlign: 'center' }} variant="headlineMd">
+                {t('streak.days_consecutive', { count: currentStreak })}
+              </AppText>
+            </View>
+
+            <AppText color="onSurfaceVariant" style={{ textAlign: 'center' }} variant="bodyMd">
+              {t('streak.subtitle')}
+            </AppText>
 
         <View style={gridContainerStyle}>
-          {days.map((day, index) => {
+          {days.map((day) => {
             const circleStyle = [
               circleBaseStyle,
               day.achieved
@@ -94,7 +102,7 @@ function Streak({ navigation }: RootScreenProps<Paths.Streak>) {
             ];
 
             return (
-              <View key={`${day.label}-${index}`} style={dayItemStyle}>
+              <View key={day.label} style={dayItemStyle}>
                 <View style={circleStyle}>
                   <AppIcon
                     color={day.achieved ? 'tertiary' : 'outlineVariant'}

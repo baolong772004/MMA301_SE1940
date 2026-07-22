@@ -60,13 +60,16 @@ export class JwtAuthGuard implements CanActivate {
       request.user = user;
       return true;
     } catch (error) {
+      // Nếu là route public và token lỗi/hết hạn → cho phép truy cập dưới dạng guest
+      // (client dùng token cũ vẫn đọc được nội dung công khai)
       if (isPublic) {
+        request.user = undefined;
         return true;
       }
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Access token không hợp lệ');
+      throw new UnauthorizedException('Access token không hợp lệ hoặc đã hết hạn');
     }
   }
 

@@ -77,6 +77,13 @@ export class StoriesController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Thống kê truyện: views, rating, unlock/comment từng chương, doanh thu xu (chỉ tác giả)' })
+  @Get(':id/stats')
+  authorStats(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.storiesService.authorStats(id, user);
+  }
+
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Thêm chương mới (tác giả)' })
   @Post(':id/chapters')
   createChapter(

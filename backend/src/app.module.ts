@@ -15,11 +15,15 @@ import { ReportsModule } from './reports/reports.module';
 import { StoriesModule } from './stories/stories.module';
 import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ limit: 300, ttl: 60_000 }]),
+    ThrottlerModule.forRoot([
+      { name: 'default', limit: 1000, ttl: 60_000 },
+      { name: 'auth', limit: 50, ttl: 60_000 },
+    ]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -29,6 +33,7 @@ import { WalletModule } from './wallet/wallet.module';
     WalletModule,
     AdminModule,
     ReportsModule,
+    NotificationsModule,
     ImportsModule,
   ],
   providers: [

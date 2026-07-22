@@ -18,7 +18,7 @@ export const WalletServices = {
       .post('wallet/topup', {
         json: { amount, method },
       })
-      .json<{ coinBalance: number; transaction: any }>();
+      .json<{ coinBalance: number; message: string }>();
     return response;
   },
 };

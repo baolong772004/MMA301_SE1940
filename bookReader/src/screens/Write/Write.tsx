@@ -484,8 +484,8 @@ function Write() {
                     />
                   </View>
 
-                  {Array.isArray(currentStoryDetail?.chapters) && currentStoryDetail.chapters.length > 0 ? (
-                    currentStoryDetail.chapters.map((chap: any) => (
+                  {Array.isArray((currentStoryDetail as any)?.chapters) && (currentStoryDetail as any).chapters.length > 0 ? (
+                    (currentStoryDetail as any).chapters.map((chap: any) => (
                       <Pressable
                         key={chap.id}
                         onPress={() => openEditChapterModal(chap)}
